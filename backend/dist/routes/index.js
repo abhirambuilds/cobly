@@ -7,9 +7,11 @@ const express_1 = require("express");
 const health_1 = __importDefault(require("./health"));
 const auth_1 = __importDefault(require("./auth"));
 const user_1 = __importDefault(require("./user"));
+const workspace_1 = __importDefault(require("./workspace"));
 const router = (0, express_1.Router)();
 // Mount all API routes here
 router.use('/health', health_1.default);
 router.use('/auth', auth_1.default);
 router.use('/users', user_1.default);
+router.use('/workspaces', workspace_1.default);
 exports.default = router;
