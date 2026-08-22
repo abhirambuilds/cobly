@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
+import { config } from './config';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.port;
 
 app.use(express.json());
 
