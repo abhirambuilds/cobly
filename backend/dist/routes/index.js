@@ -7,5 +7,5 @@ const express_1 = require("express");
 const health_1 = __importDefault(require("./health"));
 const router = (0, express_1.Router)();
 // Mount all API routes here
-router.use('/', health_1.default);
+router.use('/health', health_1.default);
 exports.default = router;

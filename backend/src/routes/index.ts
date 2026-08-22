@@ -4,6 +4,6 @@ import healthRoutes from './health';
 const router = Router();
 
 // Mount all API routes here
-router.use('/', healthRoutes);
+router.use('/health', healthRoutes);
 
 export default router;
