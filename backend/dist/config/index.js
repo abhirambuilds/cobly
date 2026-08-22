@@ -9,4 +9,5 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 exports.config = {
     port: parseInt(process.env.PORT || '5000', 10),
+    mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/cobly',
 };
