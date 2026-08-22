@@ -5,8 +5,11 @@ import { requireAuth } from '../middleware/requireAuth';
 import { validateRequest } from '../middleware/validateRequest';
 import mongoose from 'mongoose';
 
+import projectRoutes from './project';
+
 const router = Router();
 
+// ... existing schemas ...
 const createWorkspaceSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').max(100, 'Name is too long'),
   description: z.string().max(500, 'Description is too long').optional(),
@@ -30,5 +33,8 @@ router.get('/', WorkspaceController.list);
 router.get('/:workspaceId', validateRequest({ params: workspaceIdParamSchema }), WorkspaceController.getById);
 router.patch('/:workspaceId', validateRequest({ params: workspaceIdParamSchema, body: updateWorkspaceSchema }), WorkspaceController.update);
 router.delete('/:workspaceId', validateRequest({ params: workspaceIdParamSchema }), WorkspaceController.delete);
+
+// Mount nested project routes
+router.use('/:workspaceId/projects', projectRoutes);
 
 export default router;
