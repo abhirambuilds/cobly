@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Workspace, WorkspaceResponse, WorkspacesResponse, MembersResponse } from '../types/workspace';
+import type { WorkspaceResponse, WorkspacesResponse, MembersResponse } from '../types/workspace';
 
 export const workspaceApi = {
   list: async (): Promise<WorkspacesResponse> => {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { workspaceApi } from '../services/workspace';
-import { Workspace, WorkspaceMember } from '../types/workspace';
+import type { Workspace, WorkspaceMember } from '../types/workspace';
 import { useAuth } from '../hooks/useAuth';
 
 export function WorkspaceOverview() {

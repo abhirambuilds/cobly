@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { workspaceApi } from '../services/workspace';
-import { Workspace } from '../types/workspace';
+import type { Workspace } from '../types/workspace';
 import { useAuth } from '../hooks/useAuth';
 
 export function DashboardLayout() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [newWsName, setNewWsName] = useState('');
   const [newWsDesc, setNewWsDesc] = useState('');
@@ -24,7 +23,7 @@ export function DashboardLayout() {
       if (err.message.includes('401')) {
         logout();
       } else {
-        setError('Failed to load workspaces');
+        alert('Failed to load workspaces');
       }
     } finally {
       setIsLoading(false);
