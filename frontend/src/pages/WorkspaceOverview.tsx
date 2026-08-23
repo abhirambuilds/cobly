@@ -115,6 +115,17 @@ export function WorkspaceOverview() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{workspace.name}</h1>
           <p className="text-gray-600">{workspace.description || 'No description provided.'}</p>
+          <div className="mt-4">
+            <Link 
+              to={`/dashboard/workspaces/${workspaceId}/meetings`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors border border-blue-200"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              View Meetings
+            </Link>
+          </div>
         </div>
         {isOwner && (
           <button 
