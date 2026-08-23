@@ -35,6 +35,13 @@ export const api = {
       headers: getHeaders(options?.headers),
       body: JSON.stringify(body),
     });
+  },
+  del: async (endpoint: string, options?: RequestInit) => {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: 'DELETE',
+      ...options,
+      headers: getHeaders(options?.headers),
+    });
     return handleResponse(res);
   }
 };

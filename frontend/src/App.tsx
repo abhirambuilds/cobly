@@ -5,7 +5,9 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
+import { DashboardLayout } from './layouts/DashboardLayout';
+import { DashboardHome } from './pages/DashboardHome';
+import { WorkspaceOverview } from './pages/WorkspaceOverview';
 
 function App() {
   return (
@@ -16,8 +18,12 @@ function App() {
             <Route index element={<Landing />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            
             <Route element={<ProtectedRoute />}>
-              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="dashboard" element={<DashboardLayout />}>
+                <Route index element={<DashboardHome />} />
+                <Route path="workspaces/:workspaceId" element={<WorkspaceOverview />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
