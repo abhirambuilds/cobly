@@ -100,6 +100,18 @@ class TaskService {
             entityId: task._id.toString(),
             metadata: { title: task.title }
         });
+        if (assigneeId && assigneeId.toString() !== userId) {
+            const { NotificationService } = await import('./notificationService');
+            await NotificationService.sendNotification({
+                recipientId: assigneeId.toString(),
+                workspaceId,
+                type: 'task_assigned',
+                title: 'Assigned to a task',
+                message: `You were assigned to task: ${task.title}`,
+                entityType: 'task',
+                entityId: task._id.toString()
+            });
+        }
         // Populate for safe return
         await task.populate('assignee', 'name email');
         return this.toSafeTask(task);
@@ -213,6 +225,18 @@ class TaskService {
             entityId: task._id.toString(),
             metadata: changes
         });
+        if (changes.assigned_to && changes.assigned_to !== userId) {
+            const { NotificationService } = await import('./notificationService');
+            await NotificationService.sendNotification({
+                recipientId: changes.assigned_to,
+                workspaceId,
+                type: 'task_assigned',
+                title: 'Assigned to a task',
+                message: `You were assigned to task: ${task.title}`,
+                entityType: 'task',
+                entityId: task._id.toString()
+            });
+        }
         await task.populate('assignee', 'name email');
         return this.toSafeTask(task);
     }

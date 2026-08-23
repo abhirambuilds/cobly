@@ -144,6 +144,16 @@ class WorkspaceService {
             entityId: targetUserId,
             metadata: { name: target.name }
         });
+        if (requesterId !== targetUserId) {
+            const { NotificationService } = await import('./notificationService');
+            await NotificationService.sendNotification({
+                recipientId: targetUserId,
+                workspaceId: workspace._id.toString(),
+                type: 'workspace_member_added',
+                title: 'Added to workspace',
+                message: `You were added to workspace: ${workspace.name}`,
+            });
+        }
     }
     static async removeMember(workspaceId, requesterId, targetUserId) {
         const workspace = await Workspace_1.default.findById(workspaceId);
