@@ -27,6 +27,21 @@ const workspaceIdParamSchema = z.object({
   }),
 });
 
+const addMemberSchema = z.object({
+  userId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
+    message: 'Invalid user ID format',
+  }),
+});
+
+const memberIdParamSchema = z.object({
+  workspaceId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
+    message: 'Invalid workspace ID format',
+  }),
+  userId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
+    message: 'Invalid user ID format',
+  }),
+});
+
 router.use(requireAuth);
 
 router.post('/', validateRequest({ body: createWorkspaceSchema }), WorkspaceController.create);
@@ -34,6 +49,11 @@ router.get('/', WorkspaceController.list);
 router.get('/:workspaceId', validateRequest({ params: workspaceIdParamSchema }), WorkspaceController.getById);
 router.patch('/:workspaceId', validateRequest({ params: workspaceIdParamSchema, body: updateWorkspaceSchema }), WorkspaceController.update);
 router.delete('/:workspaceId', validateRequest({ params: workspaceIdParamSchema }), WorkspaceController.delete);
+
+// Membership routes
+router.get('/:workspaceId/members', validateRequest({ params: workspaceIdParamSchema }), WorkspaceController.getMembers);
+router.post('/:workspaceId/members', validateRequest({ params: workspaceIdParamSchema, body: addMemberSchema }), WorkspaceController.addMember);
+router.delete('/:workspaceId/members/:userId', validateRequest({ params: memberIdParamSchema }), WorkspaceController.removeMember);
 
 // Mount nested routes
 router.use('/:workspaceId/projects', projectRoutes);

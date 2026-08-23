@@ -26,12 +26,29 @@ const workspaceIdParamSchema = zod_1.z.object({
         message: 'Invalid workspace ID format',
     }),
 });
+const addMemberSchema = zod_1.z.object({
+    userId: zod_1.z.string().refine((val) => mongoose_1.default.Types.ObjectId.isValid(val), {
+        message: 'Invalid user ID format',
+    }),
+});
+const memberIdParamSchema = zod_1.z.object({
+    workspaceId: zod_1.z.string().refine((val) => mongoose_1.default.Types.ObjectId.isValid(val), {
+        message: 'Invalid workspace ID format',
+    }),
+    userId: zod_1.z.string().refine((val) => mongoose_1.default.Types.ObjectId.isValid(val), {
+        message: 'Invalid user ID format',
+    }),
+});
 router.use(requireAuth_1.requireAuth);
 router.post('/', (0, validateRequest_1.validateRequest)({ body: createWorkspaceSchema }), workspaceController_1.WorkspaceController.create);
 router.get('/', workspaceController_1.WorkspaceController.list);
 router.get('/:workspaceId', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema }), workspaceController_1.WorkspaceController.getById);
 router.patch('/:workspaceId', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema, body: updateWorkspaceSchema }), workspaceController_1.WorkspaceController.update);
 router.delete('/:workspaceId', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema }), workspaceController_1.WorkspaceController.delete);
+// Membership routes
+router.get('/:workspaceId/members', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema }), workspaceController_1.WorkspaceController.getMembers);
+router.post('/:workspaceId/members', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema, body: addMemberSchema }), workspaceController_1.WorkspaceController.addMember);
+router.delete('/:workspaceId/members/:userId', (0, validateRequest_1.validateRequest)({ params: memberIdParamSchema }), workspaceController_1.WorkspaceController.removeMember);
 // Mount nested routes
 router.use('/:workspaceId/projects', project_1.default);
 router.use('/:workspaceId/activity', activity_1.default);

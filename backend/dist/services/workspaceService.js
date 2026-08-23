@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkspaceService = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Workspace_1 = __importDefault(require("../models/Workspace"));
+const User_1 = __importDefault(require("../models/User"));
 const activityService_1 = require("./activityService");
 class WorkspaceService {
     /**
@@ -100,6 +101,72 @@ class WorkspaceService {
             throw new Error('FORBIDDEN');
         }
         await Workspace_1.default.deleteOne({ _id: workspace._id });
+    }
+    // --- MEMBERSHIP MANAGEMENT ---
+    static async getMembers(workspaceId, userId) {
+        const workspace = await Workspace_1.default.findById(workspaceId).populate('members.user', 'name email');
+        if (!workspace)
+            throw new Error('NOT_FOUND');
+        const isMember = workspace.members.some(m => m.user._id.toString() === userId);
+        if (!isMember)
+            throw new Error('FORBIDDEN');
+        return workspace.members.map(m => {
+            const u = m.user;
+            return {
+                id: u._id.toString(),
+                name: u.name,
+                email: u.email,
+                role: m.role
+            };
+        });
+    }
+    static async addMember(workspaceId, requesterId, targetUserId) {
+        const workspace = await Workspace_1.default.findById(workspaceId);
+        if (!workspace)
+            throw new Error('NOT_FOUND');
+        const requester = workspace.members.find(m => m.user.toString() === requesterId);
+        if (!requester || requester.role !== 'owner')
+            throw new Error('FORBIDDEN');
+        // target user must exist
+        const target = await User_1.default.findById(targetUserId);
+        if (!target)
+            throw new Error('USER_NOT_FOUND');
+        const alreadyMember = workspace.members.some(m => m.user.toString() === targetUserId);
+        if (alreadyMember)
+            throw new Error('ALREADY_MEMBER');
+        workspace.members.push({ user: new mongoose_1.default.Types.ObjectId(targetUserId), role: 'member' });
+        await workspace.save();
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspace._id.toString(),
+            actorId: requesterId,
+            action: 'member_added',
+            entityType: 'member',
+            entityId: targetUserId,
+            metadata: { name: target.name }
+        });
+    }
+    static async removeMember(workspaceId, requesterId, targetUserId) {
+        const workspace = await Workspace_1.default.findById(workspaceId);
+        if (!workspace)
+            throw new Error('NOT_FOUND');
+        const requester = workspace.members.find(m => m.user.toString() === requesterId);
+        if (!requester || requester.role !== 'owner')
+            throw new Error('FORBIDDEN');
+        const targetIndex = workspace.members.findIndex(m => m.user.toString() === targetUserId);
+        if (targetIndex === -1)
+            throw new Error('MEMBER_NOT_FOUND');
+        if (workspace.members[targetIndex].role === 'owner') {
+            throw new Error('CANNOT_REMOVE_OWNER');
+        }
+        workspace.members.splice(targetIndex, 1);
+        await workspace.save();
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspace._id.toString(),
+            actorId: requesterId,
+            action: 'member_removed',
+            entityType: 'member',
+            entityId: targetUserId
+        });
     }
 }
 exports.WorkspaceService = WorkspaceService;
