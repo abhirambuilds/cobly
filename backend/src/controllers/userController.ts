@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../services/userService';
 
 export class UserController {
+  /**
+   * Retrieves the currently authenticated user's profile based on the JWT context.
+   */
   static async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user || !req.user.id) {

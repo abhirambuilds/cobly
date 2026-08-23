@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
 const userService_1 = require("../services/userService");
 class UserController {
+    /**
+     * Retrieves the currently authenticated user's profile based on the JWT context.
+     */
     static async getMe(req, res, next) {
         try {
             if (!req.user || !req.user.id) {
