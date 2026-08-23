@@ -34,7 +34,7 @@ export class NotificationService {
   static async sendNotification(params: {
     recipientId: string;
     workspaceId: string;
-    type: 'workspace_member_added' | 'task_assigned';
+    type: 'workspace_member_added' | 'task_assigned' | 'meeting_created' | 'meeting_updated' | 'meeting_cancelled';
     title: string;
     message: string;
     entityType?: string;

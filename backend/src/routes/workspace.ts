@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 
 import projectRoutes from './project';
 import activityRoutes from './activity';
+import meetingRoutes from './meeting';
 
 const router = Router();
 
@@ -58,5 +59,6 @@ router.delete('/:workspaceId/members/:userId', validateRequest({ params: memberI
 // Mount nested routes
 router.use('/:workspaceId/projects', projectRoutes);
 router.use('/:workspaceId/activity', activityRoutes);
+router.use('/:workspaceId/meetings', meetingRoutes);
 
 export default router;

@@ -34,36 +34,54 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ActivitySchema = new mongoose_1.Schema({
+const MeetingSchema = new mongoose_1.Schema({
     workspaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Workspace',
         required: true,
     },
-    actorId: {
+    projectId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Project',
+    },
+    organizer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    action: {
+    title: {
         type: String,
         required: true,
     },
-    entityType: {
+    description: {
         type: String,
-        enum: ['workspace', 'project', 'task', 'member', 'discussion', 'comment', 'meeting'],
+    },
+    startTime: {
+        type: Date,
         required: true,
     },
-    entityId: {
-        type: mongoose_1.Schema.Types.ObjectId,
+    endTime: {
+        type: Date,
         required: true,
     },
-    metadata: {
-        type: mongoose_1.Schema.Types.Mixed,
+    status: {
+        type: String,
+        enum: ['scheduled', 'completed', 'cancelled'],
+        default: 'scheduled',
+        required: true,
+    },
+    attendees: [
+        {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+    ],
+    meetingLink: {
+        type: String,
     },
 }, {
-    timestamps: { createdAt: true, updatedAt: false }, // Activities are immutable
+    timestamps: true,
 });
-// Compound index for efficient querying of workspace activity ordered by time
-ActivitySchema.index({ workspaceId: 1, createdAt: -1 });
-exports.default = mongoose_1.default.model('Activity', ActivitySchema);
+MeetingSchema.index({ workspaceId: 1, startTime: 1 });
+MeetingSchema.index({ workspaceId: 1, status: 1, startTime: 1 });
+exports.default = mongoose_1.default.model('Meeting', MeetingSchema);

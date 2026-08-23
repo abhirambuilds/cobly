@@ -47,7 +47,7 @@ const NotificationSchema = new mongoose_1.Schema({
     },
     type: {
         type: String,
-        enum: ['workspace_member_added', 'task_assigned'],
+        enum: ['workspace_member_added', 'task_assigned', 'meeting_created', 'meeting_updated', 'meeting_cancelled'],
         required: true,
     },
     title: {

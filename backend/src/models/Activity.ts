@@ -5,7 +5,7 @@ export interface IActivity extends Document {
   workspaceId: mongoose.Types.ObjectId;
   actorId: mongoose.Types.ObjectId | IUser;
   action: string;
-  entityType: 'workspace' | 'project' | 'task' | 'member' | 'discussion' | 'comment';
+  entityType: 'workspace' | 'project' | 'task' | 'member' | 'discussion' | 'comment' | 'meeting';
   entityId: mongoose.Types.ObjectId;
   metadata?: any;
   createdAt: Date;
@@ -29,7 +29,7 @@ const ActivitySchema: Schema = new Schema(
     },
     entityType: {
       type: String,
-      enum: ['workspace', 'project', 'task', 'member', 'discussion', 'comment'],
+      enum: ['workspace', 'project', 'task', 'member', 'discussion', 'comment', 'meeting'],
       required: true,
     },
     entityId: {
