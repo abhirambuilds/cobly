@@ -9,6 +9,7 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { DashboardHome } from './pages/DashboardHome';
 import { WorkspaceOverview } from './pages/WorkspaceOverview';
 import { ProjectDetail } from './pages/ProjectDetail';
+import { DiscussionDetail } from './pages/DiscussionDetail';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
                 <Route index element={<DashboardHome />} />
                 <Route path="workspaces/:workspaceId" element={<WorkspaceOverview />} />
                 <Route path="workspaces/:workspaceId/projects/:projectId" element={<ProjectDetail />} />
+                <Route path="workspaces/:workspaceId/projects/:projectId/discussions/:discussionId" element={<DiscussionDetail />} />
               </Route>
             </Route>
           </Route>

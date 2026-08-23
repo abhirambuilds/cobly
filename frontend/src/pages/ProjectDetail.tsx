@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { projectApi } from '../services/project';
 import { taskApi } from '../services/task';
 import { workspaceApi } from '../services/workspace';
+import { discussionApi } from '../services/discussion';
 import type { Project } from '../types/project';
 import type { Task, TaskStatus, TaskPriority } from '../types/task';
+import type { Discussion } from '../types/discussion';
 import type { WorkspaceMember } from '../types/workspace';
 import { useAuth } from '../hooks/useAuth';
 
@@ -15,9 +17,13 @@ export function ProjectDetail() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // UI Tabs
+  const [activeTab, setActiveTab] = useState<'tasks' | 'discussions'>('tasks');
 
   // Project Edit State
   const [isEditingProject, setIsEditingProject] = useState(false);
@@ -38,18 +44,25 @@ export function ProjectDetail() {
   // Task Edit State
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
+  // Discussion Create State
+  const [isCreatingDiscussion, setIsCreatingDiscussion] = useState(false);
+  const [newDiscussionTitle, setNewDiscussionTitle] = useState('');
+  const [newDiscussionContent, setNewDiscussionContent] = useState('');
+
   const loadData = async () => {
     if (!workspaceId || !projectId) return;
     setIsLoading(true);
     setError('');
     try {
-      const [projData, tasksData, memData] = await Promise.all([
+      const [projData, tasksData, discData, memData] = await Promise.all([
         projectApi.get(workspaceId, projectId),
         taskApi.list(workspaceId, projectId),
+        discussionApi.list(workspaceId, projectId),
         workspaceApi.getMembers(workspaceId)
       ]);
       setProject(projData.project);
       setTasks(tasksData.tasks);
+      setDiscussions(discData.discussions);
       setMembers(memData.members);
       
       setEditProjectName(projData.project.name);
@@ -145,6 +158,23 @@ export function ProjectDetail() {
       await loadData();
     } catch (err: any) {
       alert(err.message || 'Failed to delete task');
+    }
+  };
+
+  // Discussion Handlers
+  const handleCreateDiscussion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await discussionApi.create(workspaceId!, projectId!, {
+        title: newDiscussionTitle,
+        content: newDiscussionContent
+      });
+      setIsCreatingDiscussion(false);
+      setNewDiscussionTitle('');
+      setNewDiscussionContent('');
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to create discussion');
     }
   };
 
@@ -248,23 +278,110 @@ export function ProjectDetail() {
         )}
       </div>
 
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Tasks</h2>
-          <button 
-            onClick={() => setIsCreatingTask(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm"
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex gap-6">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'tasks' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
           >
-            + New Task
+            Tasks
           </button>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-6">
-          {renderTaskColumn('todo', 'To Do')}
-          {renderTaskColumn('in_progress', 'In Progress')}
-          {renderTaskColumn('completed', 'Completed')}
-        </div>
+          <button
+            onClick={() => setActiveTab('discussions')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'discussions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Discussions
+          </button>
+        </nav>
       </div>
+
+      {activeTab === 'tasks' && (
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Tasks</h2>
+            <button 
+              onClick={() => setIsCreatingTask(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm"
+            >
+              + New Task
+            </button>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-6">
+            {renderTaskColumn('todo', 'To Do')}
+            {renderTaskColumn('in_progress', 'In Progress')}
+            {renderTaskColumn('completed', 'Completed')}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'discussions' && (
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Discussions</h2>
+            <button 
+              onClick={() => setIsCreatingDiscussion(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm"
+            >
+              + New Discussion
+            </button>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            {discussions.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No discussions yet. Start a conversation!</div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {discussions.map(discussion => (
+                  <li key={discussion.id} className="hover:bg-gray-50 transition-colors">
+                    <Link to={`/dashboard/workspaces/${workspaceId}/projects/${projectId}/discussions/${discussion.id}`} className="block p-5">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">{discussion.title}</h3>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                          {new Date(discussion.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                        {discussion.content}
+                      </p>
+                      <div className="text-xs text-gray-500 font-medium">
+                        Posted by {discussion.author.name}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Create Discussion Modal */}
+      {isCreatingDiscussion && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl">
+            <h3 className="text-lg font-bold mb-4">Start a Discussion</h3>
+            <form onSubmit={handleCreateDiscussion}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDiscussionTitle} onChange={e => setNewDiscussionTitle(e.target.value)} />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <textarea required rows={6} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDiscussionContent} onChange={e => setNewDiscussionContent(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setIsCreatingDiscussion(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">Post Discussion</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Edit Project Modal */}
       {isEditingProject && (
