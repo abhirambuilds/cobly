@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { meetingApi } from '../services/meeting';
 import { projectApi } from '../services/project';
 import { workspaceApi } from '../services/workspace';
 import type { Meeting } from '../types/meeting';
 import type { Project } from '../types/project';
 import type { WorkspaceMember } from '../types/workspace';
-import { useAuth } from '../hooks/useAuth';
 
 export function MeetingList() {
   const { workspaceId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
