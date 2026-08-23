@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { workspaceApi } from '../services/workspace';
+import { projectApi } from '../services/project';
 import type { Workspace, WorkspaceMember } from '../types/workspace';
+import type { Project } from '../types/project';
 import { useAuth } from '../hooks/useAuth';
 
 export function WorkspaceOverview() {
@@ -11,6 +13,7 @@ export function WorkspaceOverview() {
   
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -18,17 +21,24 @@ export function WorkspaceOverview() {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [memberError, setMemberError] = useState('');
 
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [newProjectDeadline, setNewProjectDeadline] = useState('');
+
   const loadData = async () => {
     if (!workspaceId) return;
     setIsLoading(true);
     setError('');
     try {
-      const [wsData, membersData] = await Promise.all([
+      const [wsData, membersData, projectsData] = await Promise.all([
         workspaceApi.get(workspaceId),
-        workspaceApi.getMembers(workspaceId)
+        workspaceApi.getMembers(workspaceId),
+        projectApi.list(workspaceId)
       ]);
       setWorkspace(wsData.workspace);
       setMembers(membersData.members);
+      setProjects(projectsData.projects);
     } catch (err: any) {
       setError(err.message || 'Failed to load workspace');
     } finally {
@@ -75,6 +85,24 @@ export function WorkspaceOverview() {
     }
   };
 
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await projectApi.create(workspaceId!, { 
+        name: newProjectName, 
+        description: newProjectDesc,
+        deadline: newProjectDeadline || undefined
+      });
+      setIsCreatingProject(false);
+      setNewProjectName('');
+      setNewProjectDesc('');
+      setNewProjectDeadline('');
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to create project');
+    }
+  };
+
   if (isLoading) return <div className="text-gray-500">Loading workspace...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
   if (!workspace) return <div className="text-gray-500">Workspace not found</div>;
@@ -82,7 +110,7 @@ export function WorkspaceOverview() {
   const isOwner = members.find(m => m.user.id === user?.id)?.role === 'owner';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{workspace.name}</h1>
@@ -99,6 +127,44 @@ export function WorkspaceOverview() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+          <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
+          <button 
+            onClick={() => setIsCreatingProject(true)}
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium border border-blue-200 px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
+          >
+            + Create Project
+          </button>
+        </div>
+        
+        {projects.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No projects yet. Create one to get started.</div>
+        ) : (
+          <ul className="divide-y divide-gray-200">
+            {projects.map(project => (
+              <li key={project.id} className="hover:bg-gray-50 transition-colors">
+                <Link to={`/dashboard/workspaces/${workspaceId}/projects/${project.id}`} className="p-5 flex justify-between items-center block">
+                  <div>
+                    <p className="font-medium text-gray-900 text-lg">{project.name}</p>
+                    {project.description && <p className="text-sm text-gray-500 mt-1">{project.description}</p>}
+                    <div className="flex gap-3 mt-2 text-xs text-gray-400">
+                      <span className="capitalize border px-2 py-0.5 rounded-full border-gray-200 bg-white">{project.status}</span>
+                      {project.deadline && <span>Due: {new Date(project.deadline).toLocaleDateString()}</span>}
+                    </div>
+                  </div>
+                  <div className="text-gray-400">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mt-8">
         <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-900">Members ({members.length})</h2>
         </div>
@@ -150,14 +216,58 @@ export function WorkspaceOverview() {
           ))}
         </ul>
       </div>
-      
-      <div className="p-6 bg-blue-50 border border-blue-100 rounded-lg">
-        <h3 className="text-blue-800 font-semibold mb-2">Projects & Tasks</h3>
-        <p className="text-blue-600 text-sm">
-          The Projects and Tasks UI will be implemented in future updates. 
-          Use the backend APIs to manage them for now.
-        </p>
-      </div>
+
+      {isCreatingProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-bold mb-4">Create Project</h3>
+            <form onSubmit={handleCreateProject}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  required
+                  autoFocus
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newProjectName}
+                  onChange={e => setNewProjectName(e.target.value)}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newProjectDesc}
+                  onChange={e => setNewProjectDesc(e.target.value)}
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                <input
+                  type="datetime-local"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newProjectDeadline}
+                  onChange={e => setNewProjectDeadline(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreatingProject(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

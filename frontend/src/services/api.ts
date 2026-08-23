@@ -37,6 +37,15 @@ export const api = {
     });
     return handleResponse(res);
   },
+  patch: async (endpoint: string, body: any, options?: RequestInit) => {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: 'PATCH',
+      ...options,
+      headers: getHeaders(options?.headers),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
   del: async (endpoint: string, options?: RequestInit) => {
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: 'DELETE',
