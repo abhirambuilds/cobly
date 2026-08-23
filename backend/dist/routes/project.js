@@ -8,8 +8,10 @@ const zod_1 = require("zod");
 const projectController_1 = require("../controllers/projectController");
 const validateRequest_1 = require("../middleware/validateRequest");
 const mongoose_1 = __importDefault(require("mongoose"));
+const task_1 = __importDefault(require("./task"));
 // mergeParams: true allows us to access req.params.workspaceId from the parent router
 const router = (0, express_1.Router)({ mergeParams: true });
+// ... existing schemas ...
 const createProjectSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, 'Project name is required').max(100, 'Name is too long'),
     description: zod_1.z.string().max(500, 'Description is too long').optional(),
@@ -40,4 +42,6 @@ router.get('/', (0, validateRequest_1.validateRequest)({ params: workspaceIdPara
 router.get('/:projectId', (0, validateRequest_1.validateRequest)({ params: projectIdParamSchema }), projectController_1.ProjectController.getById);
 router.patch('/:projectId', (0, validateRequest_1.validateRequest)({ params: projectIdParamSchema, body: updateProjectSchema }), projectController_1.ProjectController.update);
 router.delete('/:projectId', (0, validateRequest_1.validateRequest)({ params: projectIdParamSchema }), projectController_1.ProjectController.delete);
+// Mount nested task routes
+router.use('/:projectId/tasks', task_1.default);
 exports.default = router;

@@ -4,9 +4,12 @@ import { ProjectController } from '../controllers/projectController';
 import { validateRequest } from '../middleware/validateRequest';
 import mongoose from 'mongoose';
 
+import taskRoutes from './task';
+
 // mergeParams: true allows us to access req.params.workspaceId from the parent router
 const router = Router({ mergeParams: true });
 
+// ... existing schemas ...
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100, 'Name is too long'),
   description: z.string().max(500, 'Description is too long').optional(),
@@ -41,5 +44,8 @@ router.get('/', validateRequest({ params: workspaceIdParamSchema }), ProjectCont
 router.get('/:projectId', validateRequest({ params: projectIdParamSchema }), ProjectController.getById);
 router.patch('/:projectId', validateRequest({ params: projectIdParamSchema, body: updateProjectSchema }), ProjectController.update);
 router.delete('/:projectId', validateRequest({ params: projectIdParamSchema }), ProjectController.delete);
+
+// Mount nested task routes
+router.use('/:projectId/tasks', taskRoutes);
 
 export default router;
