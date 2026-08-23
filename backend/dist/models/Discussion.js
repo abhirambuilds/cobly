@@ -34,36 +34,35 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ActivitySchema = new mongoose_1.Schema({
+const DiscussionSchema = new mongoose_1.Schema({
     workspaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Workspace',
         required: true,
     },
-    actorId: {
+    projectId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Project',
+        required: true,
+    },
+    author: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    action: {
+    title: {
         type: String,
         required: true,
+        trim: true,
+        maxlength: 200,
     },
-    entityType: {
+    content: {
         type: String,
-        enum: ['workspace', 'project', 'task', 'member', 'discussion'],
         required: true,
-    },
-    entityId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        required: true,
-    },
-    metadata: {
-        type: mongoose_1.Schema.Types.Mixed,
+        maxlength: 5000,
     },
 }, {
-    timestamps: { createdAt: true, updatedAt: false }, // Activities are immutable
+    timestamps: true,
 });
-// Compound index for efficient querying of workspace activity ordered by time
-ActivitySchema.index({ workspaceId: 1, createdAt: -1 });
-exports.default = mongoose_1.default.model('Activity', ActivitySchema);
+DiscussionSchema.index({ projectId: 1, createdAt: -1 });
+exports.default = mongoose_1.default.model('Discussion', DiscussionSchema);

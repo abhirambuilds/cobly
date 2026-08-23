@@ -9,6 +9,7 @@ const projectController_1 = require("../controllers/projectController");
 const validateRequest_1 = require("../middleware/validateRequest");
 const mongoose_1 = __importDefault(require("mongoose"));
 const task_1 = __importDefault(require("./task"));
+const discussion_1 = __importDefault(require("./discussion"));
 // mergeParams: true allows us to access req.params.workspaceId from the parent router
 const router = (0, express_1.Router)({ mergeParams: true });
 // ... existing schemas ...
@@ -44,4 +45,5 @@ router.patch('/:projectId', (0, validateRequest_1.validateRequest)({ params: pro
 router.delete('/:projectId', (0, validateRequest_1.validateRequest)({ params: projectIdParamSchema }), projectController_1.ProjectController.delete);
 // Mount nested task routes
 router.use('/:projectId/tasks', task_1.default);
+router.use('/:projectId/discussions', discussion_1.default);
 exports.default = router;

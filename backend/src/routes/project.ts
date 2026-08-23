@@ -5,6 +5,7 @@ import { validateRequest } from '../middleware/validateRequest';
 import mongoose from 'mongoose';
 
 import taskRoutes from './task';
+import discussionRoutes from './discussion';
 
 // mergeParams: true allows us to access req.params.workspaceId from the parent router
 const router = Router({ mergeParams: true });
@@ -47,5 +48,6 @@ router.delete('/:projectId', validateRequest({ params: projectIdParamSchema }), 
 
 // Mount nested task routes
 router.use('/:projectId/tasks', taskRoutes);
+router.use('/:projectId/discussions', discussionRoutes);
 
 export default router;
