@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Outlet, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useParams } from 'react-router-dom';
 import { workspaceApi } from '../services/workspace';
 import { notificationApi } from '../services/notification';
 import type { Workspace } from '../types/workspace';
@@ -18,7 +18,6 @@ export function DashboardLayout() {
   
   const { workspaceId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { logout, user } = useAuth();
   
   const notifRef = useRef<HTMLDivElement>(null);
