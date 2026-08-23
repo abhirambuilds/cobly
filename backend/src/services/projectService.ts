@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Project, { IProject } from '../models/Project';
 import Workspace from '../models/Workspace';
+import { ActivityService } from './activityService';
 
 export interface SafeProject {
   id: string;
@@ -69,6 +70,16 @@ export class ProjectService {
     });
 
     await project.save();
+    
+    await ActivityService.recordActivity({
+      workspaceId: workspaceId,
+      actorId: userId,
+      action: 'project_created',
+      entityType: 'project',
+      entityId: project._id.toString(),
+      metadata: { name: project.name }
+    });
+
     return this.toSafeProject(project);
   }
 
@@ -125,12 +136,23 @@ export class ProjectService {
       throw new Error('FORBIDDEN');
     }
 
-    if (data.name !== undefined) project.name = data.name;
-    if (data.description !== undefined) project.description = data.description;
-    if (data.status !== undefined) project.status = data.status;
-    if (data.deadline !== undefined) project.deadline = data.deadline;
+    const changes: any = {};
+    if (data.name !== undefined) { project.name = data.name; changes.name = true; }
+    if (data.description !== undefined) { project.description = data.description; }
+    if (data.status !== undefined) { project.status = data.status; changes.status = data.status; }
+    if (data.deadline !== undefined) { project.deadline = data.deadline; }
 
     await project.save();
+    
+    await ActivityService.recordActivity({
+      workspaceId: workspaceId,
+      actorId: userId,
+      action: 'project_updated',
+      entityType: 'project',
+      entityId: project._id.toString(),
+      metadata: changes
+    });
+
     return this.toSafeProject(project);
   }
 
@@ -155,5 +177,14 @@ export class ProjectService {
     }
 
     await Project.deleteOne({ _id: project._id });
+    
+    await ActivityService.recordActivity({
+      workspaceId: workspaceId,
+      actorId: userId,
+      action: 'project_deleted',
+      entityType: 'project',
+      entityId: project._id.toString(),
+      metadata: { name: project.name }
+    });
   }
 }

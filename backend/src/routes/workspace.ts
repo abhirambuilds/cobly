@@ -6,6 +6,7 @@ import { validateRequest } from '../middleware/validateRequest';
 import mongoose from 'mongoose';
 
 import projectRoutes from './project';
+import activityRoutes from './activity';
 
 const router = Router();
 
@@ -34,7 +35,8 @@ router.get('/:workspaceId', validateRequest({ params: workspaceIdParamSchema }),
 router.patch('/:workspaceId', validateRequest({ params: workspaceIdParamSchema, body: updateWorkspaceSchema }), WorkspaceController.update);
 router.delete('/:workspaceId', validateRequest({ params: workspaceIdParamSchema }), WorkspaceController.delete);
 
-// Mount nested project routes
+// Mount nested routes
 router.use('/:workspaceId/projects', projectRoutes);
+router.use('/:workspaceId/activity', activityRoutes);
 
 export default router;

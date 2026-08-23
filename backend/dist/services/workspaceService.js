@@ -6,9 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkspaceService = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Workspace_1 = __importDefault(require("../models/Workspace"));
+const activityService_1 = require("./activityService");
 class WorkspaceService {
     /**
-     * Converts a Mongoose IWorkspace document into a safe API representation.
+     * Converts a Mongoose IWorkspace document into a safe API representation,
+     * completely hiding the internal members array and mapping _id to id.
      */
     static toSafeWorkspace(workspace) {
         return {
@@ -16,31 +18,30 @@ class WorkspaceService {
             name: workspace.name,
             description: workspace.description,
             ownerId: workspace.owner.toString(),
+            membersCount: workspace.members.length,
             createdAt: workspace.createdAt,
             updatedAt: workspace.updatedAt,
         };
     }
-    /**
-     * Creates a new workspace with the creator as the owner.
-     */
     static async createWorkspace(userId, data) {
         const workspace = new Workspace_1.default({
             name: data.name,
             description: data.description,
             owner: new mongoose_1.default.Types.ObjectId(userId),
-            members: [
-                {
-                    user: new mongoose_1.default.Types.ObjectId(userId),
-                    role: 'owner',
-                }
-            ]
+            members: [{ user: new mongoose_1.default.Types.ObjectId(userId), role: 'owner' }],
         });
         await workspace.save();
+        // Log activity
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspace._id.toString(),
+            actorId: userId,
+            action: 'workspace_created',
+            entityType: 'workspace',
+            entityId: workspace._id.toString(),
+            metadata: { name: workspace.name }
+        });
         return this.toSafeWorkspace(workspace);
     }
-    /**
-     * Lists all workspaces where the user is a member or owner.
-     */
     static async getWorkspacesForUser(userId) {
         const workspaces = await Workspace_1.default.find({ 'members.user': new mongoose_1.default.Types.ObjectId(userId) });
         return workspaces.map(w => this.toSafeWorkspace(w));
@@ -76,6 +77,14 @@ class WorkspaceService {
         if (data.description !== undefined)
             workspace.description = data.description;
         await workspace.save();
+        // Log activity
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspace._id.toString(),
+            actorId: userId,
+            action: 'workspace_updated',
+            entityType: 'workspace',
+            entityId: workspace._id.toString(),
+        });
         return this.toSafeWorkspace(workspace);
     }
     /**

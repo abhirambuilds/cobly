@@ -8,6 +8,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const Task_1 = __importDefault(require("../models/Task"));
 const Project_1 = __importDefault(require("../models/Project"));
 const Workspace_1 = __importDefault(require("../models/Workspace"));
+const activityService_1 = require("./activityService");
 class TaskService {
     /**
      * Converts a Mongoose ITask document into a safe API representation.
@@ -91,6 +92,14 @@ class TaskService {
             dueDate: data.dueDate,
         });
         await task.save();
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspaceId,
+            actorId: userId,
+            action: 'task_created',
+            entityType: 'task',
+            entityId: task._id.toString(),
+            metadata: { title: task.title }
+        });
         // Populate for safe return
         await task.populate('assignee', 'name email');
         return this.toSafeTask(task);
@@ -144,21 +153,29 @@ class TaskService {
         }
         const isTaskAssignee = task.assignee?.toString() === userId;
         const isOwner = context.isWorkspaceOwner || context.isProjectOwner;
+        const changes = {};
         // Check permissions
         if (isOwner) {
             // Full update allowed
-            if (data.title !== undefined)
+            if (data.title !== undefined) {
                 task.title = data.title;
-            if (data.description !== undefined)
+                changes.title = true;
+            }
+            if (data.description !== undefined) {
                 task.description = data.description;
-            if (data.priority !== undefined)
+            }
+            if (data.priority !== undefined) {
                 task.priority = data.priority;
-            if (data.dueDate !== undefined)
+                changes.priority = data.priority;
+            }
+            if (data.dueDate !== undefined) {
                 task.dueDate = data.dueDate;
+            }
             // Assignee logic for owners
             if (data.assignee !== undefined) {
                 if (data.assignee === null) {
                     task.assignee = undefined;
+                    changes.unassigned = true;
                 }
                 else {
                     const isAssigneeInWorkspace = context.workspace.members.some(m => m.user.toString() === data.assignee);
@@ -166,23 +183,36 @@ class TaskService {
                         throw new Error('INVALID_ASSIGNEE');
                     }
                     task.assignee = new mongoose_1.default.Types.ObjectId(data.assignee);
+                    changes.assigned_to = data.assignee;
                 }
             }
-            if (data.status !== undefined)
+            if (data.status !== undefined) {
                 task.status = data.status;
+                changes.status = data.status;
+            }
         }
         else if (isTaskAssignee) {
             // Partial update allowed
             if (data.title !== undefined || data.description !== undefined || data.priority !== undefined || data.dueDate !== undefined || data.assignee !== undefined) {
                 throw new Error('FORBIDDEN_FIELD_UPDATE');
             }
-            if (data.status !== undefined)
+            if (data.status !== undefined) {
                 task.status = data.status;
+                changes.status = data.status;
+            }
         }
         else {
             throw new Error('FORBIDDEN');
         }
         await task.save();
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspaceId,
+            actorId: userId,
+            action: 'task_updated',
+            entityType: 'task',
+            entityId: task._id.toString(),
+            metadata: changes
+        });
         await task.populate('assignee', 'name email');
         return this.toSafeTask(task);
     }
@@ -200,6 +230,14 @@ class TaskService {
             throw new Error('TASK_NOT_FOUND');
         }
         await Task_1.default.deleteOne({ _id: task._id });
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspaceId,
+            actorId: userId,
+            action: 'task_deleted',
+            entityType: 'task',
+            entityId: task._id.toString(),
+            metadata: { title: task.title }
+        });
     }
 }
 exports.TaskService = TaskService;

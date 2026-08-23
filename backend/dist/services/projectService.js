@@ -7,6 +7,7 @@ exports.ProjectService = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Project_1 = __importDefault(require("../models/Project"));
 const Workspace_1 = __importDefault(require("../models/Workspace"));
+const activityService_1 = require("./activityService");
 class ProjectService {
     /**
      * Converts a Mongoose IProject document into a safe API representation.
@@ -53,6 +54,14 @@ class ProjectService {
             deadline: data.deadline,
         });
         await project.save();
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspaceId,
+            actorId: userId,
+            action: 'project_created',
+            entityType: 'project',
+            entityId: project._id.toString(),
+            metadata: { name: project.name }
+        });
         return this.toSafeProject(project);
     }
     static async getProjectsByWorkspace(workspaceId, userId) {
@@ -93,15 +102,30 @@ class ProjectService {
         if (!isProjectOwner && !access.isWorkspaceOwner) {
             throw new Error('FORBIDDEN');
         }
-        if (data.name !== undefined)
+        const changes = {};
+        if (data.name !== undefined) {
             project.name = data.name;
-        if (data.description !== undefined)
+            changes.name = true;
+        }
+        if (data.description !== undefined) {
             project.description = data.description;
-        if (data.status !== undefined)
+        }
+        if (data.status !== undefined) {
             project.status = data.status;
-        if (data.deadline !== undefined)
+            changes.status = data.status;
+        }
+        if (data.deadline !== undefined) {
             project.deadline = data.deadline;
+        }
         await project.save();
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspaceId,
+            actorId: userId,
+            action: 'project_updated',
+            entityType: 'project',
+            entityId: project._id.toString(),
+            metadata: changes
+        });
         return this.toSafeProject(project);
     }
     static async deleteProject(workspaceId, projectId, userId) {
@@ -121,6 +145,14 @@ class ProjectService {
             throw new Error('FORBIDDEN');
         }
         await Project_1.default.deleteOne({ _id: project._id });
+        await activityService_1.ActivityService.recordActivity({
+            workspaceId: workspaceId,
+            actorId: userId,
+            action: 'project_deleted',
+            entityType: 'project',
+            entityId: project._id.toString(),
+            metadata: { name: project.name }
+        });
     }
 }
 exports.ProjectService = ProjectService;

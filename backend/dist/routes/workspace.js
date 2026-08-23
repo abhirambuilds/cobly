@@ -10,6 +10,7 @@ const requireAuth_1 = require("../middleware/requireAuth");
 const validateRequest_1 = require("../middleware/validateRequest");
 const mongoose_1 = __importDefault(require("mongoose"));
 const project_1 = __importDefault(require("./project"));
+const activity_1 = __importDefault(require("./activity"));
 const router = (0, express_1.Router)();
 // ... existing schemas ...
 const createWorkspaceSchema = zod_1.z.object({
@@ -31,6 +32,7 @@ router.get('/', workspaceController_1.WorkspaceController.list);
 router.get('/:workspaceId', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema }), workspaceController_1.WorkspaceController.getById);
 router.patch('/:workspaceId', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema, body: updateWorkspaceSchema }), workspaceController_1.WorkspaceController.update);
 router.delete('/:workspaceId', (0, validateRequest_1.validateRequest)({ params: workspaceIdParamSchema }), workspaceController_1.WorkspaceController.delete);
-// Mount nested project routes
+// Mount nested routes
 router.use('/:workspaceId/projects', project_1.default);
+router.use('/:workspaceId/activity', activity_1.default);
 exports.default = router;

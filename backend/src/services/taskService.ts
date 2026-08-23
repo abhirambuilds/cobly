@@ -3,6 +3,7 @@ import Task, { ITask } from '../models/Task';
 import Project from '../models/Project';
 import Workspace from '../models/Workspace';
 import { IUser } from '../models/User';
+import { ActivityService } from './activityService';
 
 export interface SafeTask {
   id: string;
@@ -118,6 +119,15 @@ export class TaskService {
 
     await task.save();
     
+    await ActivityService.recordActivity({
+      workspaceId: workspaceId,
+      actorId: userId,
+      action: 'task_created',
+      entityType: 'task',
+      entityId: task._id.toString(),
+      metadata: { title: task.title }
+    });
+
     // Populate for safe return
     await task.populate('assignee', 'name email');
     return this.toSafeTask(task);
@@ -190,41 +200,54 @@ export class TaskService {
 
     const isTaskAssignee = task.assignee?.toString() === userId;
     const isOwner = context.isWorkspaceOwner || context.isProjectOwner;
+    const changes: any = {};
 
     // Check permissions
     if (isOwner) {
       // Full update allowed
-      if (data.title !== undefined) task.title = data.title;
-      if (data.description !== undefined) task.description = data.description;
-      if (data.priority !== undefined) task.priority = data.priority;
-      if (data.dueDate !== undefined) task.dueDate = data.dueDate;
+      if (data.title !== undefined) { task.title = data.title; changes.title = true; }
+      if (data.description !== undefined) { task.description = data.description; }
+      if (data.priority !== undefined) { task.priority = data.priority; changes.priority = data.priority; }
+      if (data.dueDate !== undefined) { task.dueDate = data.dueDate; }
       
       // Assignee logic for owners
       if (data.assignee !== undefined) {
         if (data.assignee === null) {
           task.assignee = undefined;
+          changes.unassigned = true;
         } else {
           const isAssigneeInWorkspace = context.workspace.members.some(m => m.user.toString() === data.assignee);
           if (!isAssigneeInWorkspace) {
             throw new Error('INVALID_ASSIGNEE');
           }
           task.assignee = new mongoose.Types.ObjectId(data.assignee);
+          changes.assigned_to = data.assignee;
         }
       }
       
-      if (data.status !== undefined) task.status = data.status;
+      if (data.status !== undefined) { task.status = data.status; changes.status = data.status; }
 
     } else if (isTaskAssignee) {
       // Partial update allowed
       if (data.title !== undefined || data.description !== undefined || data.priority !== undefined || data.dueDate !== undefined || data.assignee !== undefined) {
          throw new Error('FORBIDDEN_FIELD_UPDATE');
       }
-      if (data.status !== undefined) task.status = data.status;
+      if (data.status !== undefined) { task.status = data.status; changes.status = data.status; }
     } else {
       throw new Error('FORBIDDEN');
     }
 
     await task.save();
+    
+    await ActivityService.recordActivity({
+      workspaceId: workspaceId,
+      actorId: userId,
+      action: 'task_updated',
+      entityType: 'task',
+      entityId: task._id.toString(),
+      metadata: changes
+    });
+
     await task.populate('assignee', 'name email');
     return this.toSafeTask(task);
   }
@@ -247,5 +270,14 @@ export class TaskService {
     }
 
     await Task.deleteOne({ _id: task._id });
+    
+    await ActivityService.recordActivity({
+      workspaceId: workspaceId,
+      actorId: userId,
+      action: 'task_deleted',
+      entityType: 'task',
+      entityId: task._id.toString(),
+      metadata: { title: task.title }
+    });
   }
 }
