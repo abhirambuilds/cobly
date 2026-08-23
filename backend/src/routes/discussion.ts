@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { DiscussionController } from '../controllers/discussionController';
 import { validateRequest } from '../middleware/validateRequest';
 import mongoose from 'mongoose';
+import commentRoutes from './comment';
 
 const router = Router({ mergeParams: true });
 
@@ -42,5 +43,7 @@ router.get('/', validateRequest({ params: projectIdParamSchema }), DiscussionCon
 router.get('/:discussionId', validateRequest({ params: discussionIdParamSchema }), DiscussionController.getById);
 router.patch('/:discussionId', validateRequest({ params: discussionIdParamSchema, body: updateDiscussionSchema }), DiscussionController.update);
 router.delete('/:discussionId', validateRequest({ params: discussionIdParamSchema }), DiscussionController.delete);
+
+router.use('/:discussionId/comments', commentRoutes);
 
 export default router;

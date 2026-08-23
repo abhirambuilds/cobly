@@ -26,7 +26,7 @@ export class ActivityService {
     workspaceId: string;
     actorId: string;
     action: string;
-    entityType: 'workspace' | 'project' | 'task' | 'member' | 'discussion';
+    entityType: 'workspace' | 'project' | 'task' | 'member' | 'discussion' | 'comment';
     entityId: string;
     metadata?: any;
   }): Promise<void> {

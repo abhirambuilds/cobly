@@ -8,6 +8,7 @@ const zod_1 = require("zod");
 const discussionController_1 = require("../controllers/discussionController");
 const validateRequest_1 = require("../middleware/validateRequest");
 const mongoose_1 = __importDefault(require("mongoose"));
+const comment_1 = __importDefault(require("./comment"));
 const router = (0, express_1.Router)({ mergeParams: true });
 const createDiscussionSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, 'Title is required').max(200, 'Title is too long'),
@@ -41,4 +42,5 @@ router.get('/', (0, validateRequest_1.validateRequest)({ params: projectIdParamS
 router.get('/:discussionId', (0, validateRequest_1.validateRequest)({ params: discussionIdParamSchema }), discussionController_1.DiscussionController.getById);
 router.patch('/:discussionId', (0, validateRequest_1.validateRequest)({ params: discussionIdParamSchema, body: updateDiscussionSchema }), discussionController_1.DiscussionController.update);
 router.delete('/:discussionId', (0, validateRequest_1.validateRequest)({ params: discussionIdParamSchema }), discussionController_1.DiscussionController.delete);
+router.use('/:discussionId/comments', comment_1.default);
 exports.default = router;
