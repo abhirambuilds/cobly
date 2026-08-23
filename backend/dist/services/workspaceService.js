@@ -145,7 +145,7 @@ class WorkspaceService {
             metadata: { name: target.name }
         });
         if (requesterId !== targetUserId) {
-            const { NotificationService } = await import('./notificationService');
+            const { NotificationService } = await import('./notificationService.js');
             await NotificationService.sendNotification({
                 recipientId: targetUserId,
                 workspaceId: workspace._id.toString(),

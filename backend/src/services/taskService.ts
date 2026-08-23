@@ -129,7 +129,7 @@ export class TaskService {
     });
 
     if (assigneeId && assigneeId.toString() !== userId) {
-      const { NotificationService } = await import('./notificationService');
+      const { NotificationService } = await import('./notificationService.js');
       await NotificationService.sendNotification({
         recipientId: assigneeId.toString(),
         workspaceId,
@@ -262,7 +262,7 @@ export class TaskService {
     });
 
     if (changes.assigned_to && changes.assigned_to !== userId) {
-      const { NotificationService } = await import('./notificationService');
+      const { NotificationService } = await import('./notificationService.js');
       await NotificationService.sendNotification({
         recipientId: changes.assigned_to,
         workspaceId,
