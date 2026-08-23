@@ -4,9 +4,15 @@ import path from 'path';
 // Load environment variables from .env file
 dotenv.config();
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret.length < 32) {
+  console.error('FATAL ERROR: JWT_SECRET environment variable is missing or insecurely short (must be at least 32 characters).');
+  process.exit(1);
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/cobly',
-  jwtSecret: process.env.JWT_SECRET || 'fallback_secret',
+  jwtSecret: jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h'
 };

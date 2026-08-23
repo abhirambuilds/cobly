@@ -59,7 +59,7 @@ export class NotificationService {
   }
 
   static async getNotifications(userId: string, unreadOnly: boolean = false, limit: number = 50): Promise<SafeNotification[]> {
-    const query: any = { recipient: new mongoose.Types.ObjectId(userId) };
+    const query: Record<string, unknown> = { recipient: new mongoose.Types.ObjectId(userId) };
     if (unreadOnly) {
       query.read = false;
     }

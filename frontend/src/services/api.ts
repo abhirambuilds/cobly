@@ -28,7 +28,7 @@ export const api = {
     });
     return handleResponse(res);
   },
-  post: async (endpoint: string, body: any, options?: RequestInit) => {
+  post: async (endpoint: string, body: unknown, options?: RequestInit) => {
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
       ...options,
@@ -37,7 +37,7 @@ export const api = {
     });
     return handleResponse(res);
   },
-  patch: async (endpoint: string, body: any, options?: RequestInit) => {
+  patch: async (endpoint: string, body: unknown, options?: RequestInit) => {
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: 'PATCH',
       ...options,

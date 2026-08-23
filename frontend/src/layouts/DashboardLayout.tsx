@@ -26,8 +26,8 @@ export function DashboardLayout() {
     try {
       const data = await workspaceApi.list();
       setWorkspaces(data.workspaces);
-    } catch (err: any) {
-      if (err.message.includes('401')) {
+    } catch (err: unknown) {
+      if ((err instanceof Error ? err.message : "Unknown error").includes('401')) {
         logout();
       } else {
         alert('Failed to load workspaces');
@@ -70,8 +70,8 @@ export function DashboardLayout() {
       setNewWsName('');
       setNewWsDesc('');
       navigate(`/dashboard/workspaces/${data.workspace.id}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to create workspace');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create workspace');
     }
   };
   

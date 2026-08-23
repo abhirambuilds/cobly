@@ -69,8 +69,8 @@ export function ProjectDetail() {
       setEditProjectDesc(projData.project.description || '');
       setEditProjectStatus(projData.project.status);
       setEditProjectDeadline(projData.project.deadline ? new Date(projData.project.deadline).toISOString().slice(0,16) : '');
-    } catch (err: any) {
-      setError(err.message || 'Failed to load project details');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load project details');
     } finally {
       setIsLoading(false);
     }
@@ -92,8 +92,8 @@ export function ProjectDetail() {
       });
       setIsEditingProject(false);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to update project');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update project');
     }
   };
 
@@ -102,8 +102,8 @@ export function ProjectDetail() {
     try {
       await projectApi.delete(workspaceId!, projectId!);
       navigate(`/dashboard/workspaces/${workspaceId}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete project');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete project');
     }
   };
 
@@ -127,8 +127,8 @@ export function ProjectDetail() {
       setNewTaskDueDate('');
       setNewTaskAssignee('');
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to create task');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create task');
     }
   };
 
@@ -146,8 +146,8 @@ export function ProjectDetail() {
       });
       setEditingTask(null);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to update task');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update task');
     }
   };
 
@@ -156,8 +156,8 @@ export function ProjectDetail() {
     try {
       await taskApi.delete(workspaceId!, projectId!, taskId);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete task');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete task');
     }
   };
 
@@ -173,8 +173,8 @@ export function ProjectDetail() {
       setNewDiscussionTitle('');
       setNewDiscussionContent('');
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to create discussion');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create discussion');
     }
   };
 

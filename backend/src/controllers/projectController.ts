@@ -2,16 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import { ProjectService } from '../services/projectService';
 
 export class ProjectController {
-  private static handleServiceError(error: any, res: Response, next: NextFunction) {
-    if (error.message === 'WORKSPACE_NOT_FOUND') {
+  private static handleServiceError(error: unknown, res: Response, next: NextFunction) {
+    if (error instanceof Error && error.message === 'WORKSPACE_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Workspace not found' } });
       return;
     }
-    if (error.message === 'PROJECT_NOT_FOUND') {
+    if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Project not found in this workspace' } });
       return;
     }
-    if (error.message === 'FORBIDDEN') {
+    if (error instanceof Error && error.message === 'FORBIDDEN') {
       res.status(403).json({ error: { message: 'Forbidden: insufficient permissions' } });
       return;
     }

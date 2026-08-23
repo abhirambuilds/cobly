@@ -14,7 +14,7 @@ export interface SafeActivity {
   action: string;
   entityType: string;
   entityId: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 
@@ -28,7 +28,7 @@ export class ActivityService {
     action: string;
     entityType: 'workspace' | 'project' | 'task' | 'member' | 'discussion' | 'comment' | 'meeting';
     entityId: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }): Promise<void> {
     try {
       const activity = new Activity({

@@ -4,15 +4,15 @@ exports.ProjectController = void 0;
 const projectService_1 = require("../services/projectService");
 class ProjectController {
     static handleServiceError(error, res, next) {
-        if (error.message === 'WORKSPACE_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'WORKSPACE_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Workspace not found' } });
             return;
         }
-        if (error.message === 'PROJECT_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Project not found in this workspace' } });
             return;
         }
-        if (error.message === 'FORBIDDEN') {
+        if (error instanceof Error && error.message === 'FORBIDDEN') {
             res.status(403).json({ error: { message: 'Forbidden: insufficient permissions' } });
             return;
         }

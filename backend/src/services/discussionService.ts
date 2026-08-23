@@ -168,7 +168,7 @@ export class DiscussionService {
       throw new Error('FORBIDDEN');
     }
 
-    const changes: any = {};
+    const changes: Record<string, unknown> = {};
     if (data.title !== undefined) { discussion.title = data.title; changes.title = true; }
     if (data.content !== undefined) { discussion.content = data.content; }
 

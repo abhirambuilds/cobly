@@ -17,7 +17,7 @@ class AuthController {
             });
         }
         catch (error) {
-            if (error.message === 'DUPLICATE_EMAIL') {
+            if (error instanceof Error && error.message === 'DUPLICATE_EMAIL') {
                 res.status(409).json({ error: { message: 'Email already exists' } });
                 return;
             }
@@ -39,7 +39,7 @@ class AuthController {
             });
         }
         catch (error) {
-            if (error.message === 'INVALID_CREDENTIALS') {
+            if (error instanceof Error && error.message === 'INVALID_CREDENTIALS') {
                 res.status(401).json({ error: { message: 'Invalid credentials' } });
                 return;
             }

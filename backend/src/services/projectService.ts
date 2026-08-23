@@ -136,7 +136,7 @@ export class ProjectService {
       throw new Error('FORBIDDEN');
     }
 
-    const changes: any = {};
+    const changes: Record<string, unknown> = {};
     if (data.name !== undefined) { project.name = data.name; changes.name = true; }
     if (data.description !== undefined) { project.description = data.description; }
     if (data.status !== undefined) { project.status = data.status; changes.status = data.status; }

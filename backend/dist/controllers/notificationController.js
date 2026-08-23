@@ -4,7 +4,7 @@ exports.NotificationController = void 0;
 const notificationService_1 = require("../services/notificationService");
 class NotificationController {
     static handleServiceError(error, res, next) {
-        if (error.message === 'NOTIFICATION_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'NOTIFICATION_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Notification not found' } });
             return;
         }

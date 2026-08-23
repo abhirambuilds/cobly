@@ -16,7 +16,7 @@ class UserController {
             res.status(200).json({ user: safeProfile });
         }
         catch (error) {
-            if (error.message === 'USER_NOT_FOUND') {
+            if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
                 res.status(404).json({ error: { message: 'User profile not found' } });
                 return;
             }

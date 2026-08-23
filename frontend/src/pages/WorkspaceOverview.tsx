@@ -46,8 +46,8 @@ export function WorkspaceOverview() {
       setMembers(membersData.members);
       setProjects(projectsData.projects);
       setActivities(activityData.activities);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load workspace data');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load workspace data');
     } finally {
       setIsLoading(false);
     }
@@ -65,8 +65,8 @@ export function WorkspaceOverview() {
       await workspaceApi.addMember(workspaceId!, newMemberId);
       setNewMemberId('');
       await loadData();
-    } catch (err: any) {
-      setMemberError(err.message || 'Failed to add member');
+    } catch (err: unknown) {
+      setMemberError((err instanceof Error ? err.message : "Unknown error") || 'Failed to add member');
     } finally {
       setIsAddingMember(false);
     }
@@ -77,8 +77,8 @@ export function WorkspaceOverview() {
     try {
       await workspaceApi.removeMember(workspaceId!, userId);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to remove member');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to remove member');
     }
   };
 
@@ -87,8 +87,8 @@ export function WorkspaceOverview() {
     try {
       await workspaceApi.delete(workspaceId!);
       navigate('/dashboard');
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete workspace');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete workspace');
     }
   };
 
@@ -105,8 +105,8 @@ export function WorkspaceOverview() {
       setNewProjectDesc('');
       setNewProjectDeadline('');
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to create project');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create project');
     }
   };
 

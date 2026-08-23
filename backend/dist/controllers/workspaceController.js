@@ -4,11 +4,11 @@ exports.WorkspaceController = void 0;
 const workspaceService_1 = require("../services/workspaceService");
 class WorkspaceController {
     static handleServiceError(error, res, next) {
-        if (error.message === 'NOT_FOUND') {
+        if (error instanceof Error && error.message === 'NOT_FOUND') {
             res.status(404).json({ error: { message: 'Workspace not found' } });
             return;
         }
-        if (error.message === 'FORBIDDEN') {
+        if (error instanceof Error && error.message === 'FORBIDDEN') {
             res.status(403).json({ error: { message: 'Forbidden: insufficient permissions for this workspace' } });
             return;
         }
@@ -83,11 +83,11 @@ class WorkspaceController {
             res.status(200).json({ success: true, message: 'Member added' });
         }
         catch (error) {
-            if (error.message === 'USER_NOT_FOUND') {
+            if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
                 res.status(404).json({ error: { message: 'Target user not found' } });
                 return;
             }
-            if (error.message === 'ALREADY_MEMBER') {
+            if (error instanceof Error && error.message === 'ALREADY_MEMBER') {
                 res.status(409).json({ error: { message: 'User is already a member' } });
                 return;
             }
@@ -102,11 +102,11 @@ class WorkspaceController {
             res.status(200).json({ success: true, message: 'Member removed' });
         }
         catch (error) {
-            if (error.message === 'MEMBER_NOT_FOUND') {
+            if (error instanceof Error && error.message === 'MEMBER_NOT_FOUND') {
                 res.status(404).json({ error: { message: 'Member not found in workspace' } });
                 return;
             }
-            if (error.message === 'CANNOT_REMOVE_OWNER') {
+            if (error instanceof Error && error.message === 'CANNOT_REMOVE_OWNER') {
                 res.status(400).json({ error: { message: 'Cannot remove the workspace owner' } });
                 return;
             }

@@ -3,12 +3,12 @@ import { WorkspaceService } from '../services/workspaceService';
 import mongoose from 'mongoose';
 
 export class WorkspaceController {
-  private static handleServiceError(error: any, res: Response, next: NextFunction) {
-    if (error.message === 'NOT_FOUND') {
+  private static handleServiceError(error: unknown, res: Response, next: NextFunction) {
+    if (error instanceof Error && error.message === 'NOT_FOUND') {
       res.status(404).json({ error: { message: 'Workspace not found' } });
       return;
     }
-    if (error.message === 'FORBIDDEN') {
+    if (error instanceof Error && error.message === 'FORBIDDEN') {
       res.status(403).json({ error: { message: 'Forbidden: insufficient permissions for this workspace' } });
       return;
     }
@@ -84,12 +84,12 @@ export class WorkspaceController {
       
       await WorkspaceService.addMember(workspaceId, req.user!.id, userId);
       res.status(200).json({ success: true, message: 'Member added' });
-    } catch (error: any) {
-      if (error.message === 'USER_NOT_FOUND') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
         res.status(404).json({ error: { message: 'Target user not found' } });
         return;
       }
-      if (error.message === 'ALREADY_MEMBER') {
+      if (error instanceof Error && error.message === 'ALREADY_MEMBER') {
         res.status(409).json({ error: { message: 'User is already a member' } });
         return;
       }
@@ -104,12 +104,12 @@ export class WorkspaceController {
       
       await WorkspaceService.removeMember(workspaceId, req.user!.id, targetUserId);
       res.status(200).json({ success: true, message: 'Member removed' });
-    } catch (error: any) {
-      if (error.message === 'MEMBER_NOT_FOUND') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'MEMBER_NOT_FOUND') {
         res.status(404).json({ error: { message: 'Member not found in workspace' } });
         return;
       }
-      if (error.message === 'CANNOT_REMOVE_OWNER') {
+      if (error instanceof Error && error.message === 'CANNOT_REMOVE_OWNER') {
         res.status(400).json({ error: { message: 'Cannot remove the workspace owner' } });
         return;
       }

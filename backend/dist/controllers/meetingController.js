@@ -4,27 +4,27 @@ exports.MeetingController = void 0;
 const meetingService_1 = require("../services/meetingService");
 class MeetingController {
     static handleServiceError(error, res, next) {
-        if (error.message === 'WORKSPACE_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'WORKSPACE_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Workspace not found' } });
             return;
         }
-        if (error.message === 'PROJECT_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Project not found' } });
             return;
         }
-        if (error.message === 'MEETING_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'MEETING_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Meeting not found' } });
             return;
         }
-        if (error.message === 'FORBIDDEN') {
+        if (error instanceof Error && error.message === 'FORBIDDEN') {
             res.status(403).json({ error: { message: 'Forbidden: insufficient permissions' } });
             return;
         }
-        if (error.message === 'INVALID_TIME') {
+        if (error instanceof Error && error.message === 'INVALID_TIME') {
             res.status(400).json({ error: { message: 'End time must be after start time' } });
             return;
         }
-        if (error.message === 'INVALID_ATTENDEE') {
+        if (error instanceof Error && error.message === 'INVALID_ATTENDEE') {
             res.status(400).json({ error: { message: 'One or more attendees are not members of this workspace' } });
             return;
         }

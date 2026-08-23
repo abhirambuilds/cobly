@@ -159,7 +159,7 @@ export class CommentService {
       throw new Error('FORBIDDEN');
     }
 
-    const changes: any = {};
+    const changes: Record<string, unknown> = {};
     if (data.content !== undefined) { comment.content = data.content; changes.content = true; }
 
     await comment.save();

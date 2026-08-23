@@ -10,11 +10,11 @@ export const taskApi = {
     return api.get(`/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`);
   },
   
-  create: async (workspaceId: string, projectId: string, data: any): Promise<TaskResponse> => {
+  create: async (workspaceId: string, projectId: string, data: Record<string, unknown>): Promise<TaskResponse> => {
     return api.post(`/workspaces/${workspaceId}/projects/${projectId}/tasks`, data);
   },
   
-  update: async (workspaceId: string, projectId: string, taskId: string, data: any): Promise<TaskResponse> => {
+  update: async (workspaceId: string, projectId: string, taskId: string, data: Record<string, unknown>): Promise<TaskResponse> => {
     return api.patch(`/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`, data);
   },
   

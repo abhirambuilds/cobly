@@ -2,24 +2,24 @@ import { Request, Response, NextFunction } from 'express';
 import { CommentService } from '../services/commentService';
 
 export class CommentController {
-  private static handleServiceError(error: any, res: Response, next: NextFunction) {
-    if (error.message === 'WORKSPACE_NOT_FOUND') {
+  private static handleServiceError(error: unknown, res: Response, next: NextFunction) {
+    if (error instanceof Error && error.message === 'WORKSPACE_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Workspace not found' } });
       return;
     }
-    if (error.message === 'PROJECT_NOT_FOUND') {
+    if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Project not found' } });
       return;
     }
-    if (error.message === 'DISCUSSION_NOT_FOUND') {
+    if (error instanceof Error && error.message === 'DISCUSSION_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Discussion not found' } });
       return;
     }
-    if (error.message === 'COMMENT_NOT_FOUND') {
+    if (error instanceof Error && error.message === 'COMMENT_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Comment not found' } });
       return;
     }
-    if (error.message === 'FORBIDDEN') {
+    if (error instanceof Error && error.message === 'FORBIDDEN') {
       res.status(403).json({ error: { message: 'Forbidden: insufficient permissions' } });
       return;
     }

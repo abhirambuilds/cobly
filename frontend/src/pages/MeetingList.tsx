@@ -39,8 +39,8 @@ export function MeetingList() {
       setMeetings(meetingsData.meetings);
       setProjects(projectsData.projects);
       setMembers(membersData.members);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load meetings');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load meetings');
     } finally {
       setIsLoading(false);
     }
@@ -74,8 +74,8 @@ export function MeetingList() {
       setNewLink('');
       setNewAttendees([]);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to create meeting');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create meeting');
     }
   };
 

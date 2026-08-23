@@ -157,7 +157,7 @@ export class TaskService {
       throw new Error('FORBIDDEN');
     }
 
-    const query: any = { projectId: new mongoose.Types.ObjectId(projectId) };
+    const query: Record<string, unknown> = { projectId: new mongoose.Types.ObjectId(projectId) };
     if (filters?.status) query.status = filters.status;
     if (filters?.priority) query.priority = filters.priority;
     if (filters?.assignee) {
@@ -213,7 +213,7 @@ export class TaskService {
 
     const isTaskAssignee = task.assignee?.toString() === userId;
     const isOwner = context.isWorkspaceOwner || context.isProjectOwner;
-    const changes: any = {};
+    const changes: Record<string, unknown> = {};
 
     // Check permissions
     if (isOwner) {
@@ -264,7 +264,7 @@ export class TaskService {
     if (changes.assigned_to && changes.assigned_to !== userId) {
       const { NotificationService } = await import('./notificationService.js');
       await NotificationService.sendNotification({
-        recipientId: changes.assigned_to,
+        recipientId: changes.assigned_to as string,
         workspaceId,
         type: 'task_assigned',
         title: 'Assigned to a task',

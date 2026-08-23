@@ -15,8 +15,8 @@ export class UserController {
       const safeProfile = await UserService.getUserProfile(req.user.id);
       
       res.status(200).json({ user: safeProfile });
-    } catch (error: any) {
-      if (error.message === 'USER_NOT_FOUND') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
         res.status(404).json({ error: { message: 'User profile not found' } });
         return;
       }

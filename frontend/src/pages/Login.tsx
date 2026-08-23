@@ -20,8 +20,8 @@ export function Login() {
       const data = await api.post('/auth/login', { email, password });
       login(data.token, data.user);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Login failed');
     } finally {
       setIsLoading(false);
     }

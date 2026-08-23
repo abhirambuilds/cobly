@@ -12,10 +12,10 @@ const activityService_1 = require("./activityService");
 class MeetingService {
     static toSafeMeeting(meeting) {
         const toSafeUser = (u) => {
-            if (typeof u === 'object' && '_id' in u) {
+            if (u && typeof u === 'object' && '_id' in u) {
                 return { id: u._id.toString(), name: u.name, email: u.email };
             }
-            return { id: u.toString(), name: 'Unknown', email: 'Unknown' };
+            return { id: u?.toString() || '', name: 'Unknown', email: 'Unknown' };
         };
         return {
             id: meeting._id.toString(),

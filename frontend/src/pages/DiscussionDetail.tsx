@@ -51,8 +51,8 @@ export function DiscussionDetail() {
       
       setEditDiscussionTitle(discData.discussion.title);
       setEditDiscussionContent(discData.discussion.content);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load discussion details');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load discussion details');
     } finally {
       setIsLoading(false);
     }
@@ -72,8 +72,8 @@ export function DiscussionDetail() {
       });
       setIsEditingDiscussion(false);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to update discussion');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update discussion');
     }
   };
 
@@ -82,8 +82,8 @@ export function DiscussionDetail() {
     try {
       await discussionApi.delete(workspaceId!, projectId!, discussionId!);
       navigate(`/dashboard/workspaces/${workspaceId}/projects/${projectId}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete discussion');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete discussion');
     }
   };
 
@@ -98,8 +98,8 @@ export function DiscussionDetail() {
       });
       setNewCommentContent('');
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to create comment');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create comment');
     } finally {
       setIsCreatingComment(false);
     }
@@ -114,8 +114,8 @@ export function DiscussionDetail() {
       });
       setEditingComment(null);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to update comment');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update comment');
     }
   };
 
@@ -124,8 +124,8 @@ export function DiscussionDetail() {
     try {
       await commentApi.delete(workspaceId!, projectId!, discussionId!, commentId);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete comment');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete comment');
     }
   };
 

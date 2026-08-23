@@ -18,8 +18,8 @@ export function Register() {
     try {
       await api.post('/auth/register', { name, email, password });
       navigate('/login');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Registration failed');
     } finally {
       setIsLoading(false);
     }

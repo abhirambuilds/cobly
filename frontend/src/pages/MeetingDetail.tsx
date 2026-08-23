@@ -52,8 +52,8 @@ export function MeetingDetail() {
       setEditLink(meetingData.meeting.meetingLink || '');
       setEditStatus(meetingData.meeting.status);
       setEditAttendees(meetingData.meeting.attendees.map(a => a.id));
-    } catch (err: any) {
-      setError(err.message || 'Failed to load meeting');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load meeting');
     } finally {
       setIsLoading(false);
     }
@@ -89,8 +89,8 @@ export function MeetingDetail() {
       });
       setIsEditing(false);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to update meeting');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update meeting');
     }
   };
 
@@ -99,8 +99,8 @@ export function MeetingDetail() {
     try {
       await meetingApi.delete(workspaceId!, meetingId!);
       navigate(`/dashboard/workspaces/${workspaceId}/meetings`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete meeting');
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete meeting');
     }
   };
 

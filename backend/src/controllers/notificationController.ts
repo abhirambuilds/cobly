@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { NotificationService } from '../services/notificationService';
 
 export class NotificationController {
-  private static handleServiceError(error: any, res: Response, next: NextFunction) {
-    if (error.message === 'NOTIFICATION_NOT_FOUND') {
+  private static handleServiceError(error: unknown, res: Response, next: NextFunction) {
+    if (error instanceof Error && error.message === 'NOTIFICATION_NOT_FOUND') {
       res.status(404).json({ error: { message: 'Notification not found' } });
       return;
     }

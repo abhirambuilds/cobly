@@ -7,7 +7,7 @@ export interface Activity {
   action: string;
   entityType: string;
   entityId: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 

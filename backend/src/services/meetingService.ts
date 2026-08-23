@@ -24,10 +24,10 @@ export interface SafeMeeting {
 export class MeetingService {
   static toSafeMeeting(meeting: IMeeting): SafeMeeting {
     const toSafeUser = (u: any) => {
-      if (typeof u === 'object' && '_id' in u) {
+      if (u && typeof u === 'object' && '_id' in u) {
         return { id: u._id.toString(), name: u.name, email: u.email };
       }
-      return { id: u.toString(), name: 'Unknown', email: 'Unknown' };
+      return { id: u?.toString() || '', name: 'Unknown', email: 'Unknown' };
     };
 
     return {
@@ -70,10 +70,10 @@ export class MeetingService {
     };
   }
 
-  private static validateAttendees(attendeesIds: string[], workspace: any) {
+  private static validateAttendees(attendeesIds: string[], workspace: { members: Array<{ user: { toString: () => string } }> }) {
     const uniqueAttendees = [...new Set(attendeesIds)];
     for (const id of uniqueAttendees) {
-      const isMember = workspace.members.some((m: any) => m.user.toString() === id);
+      const isMember = workspace.members.some((m) => m.user.toString() === id);
       if (!isMember) {
         throw new Error('INVALID_ATTENDEE');
       }
@@ -160,7 +160,7 @@ export class MeetingService {
       throw new Error('FORBIDDEN');
     }
 
-    const query: any = { workspaceId: new mongoose.Types.ObjectId(workspaceId) };
+    const query: Record<string, unknown> = { workspaceId: new mongoose.Types.ObjectId(workspaceId) };
     if (filters?.status) query.status = filters.status;
     if (filters?.projectId) query.projectId = new mongoose.Types.ObjectId(filters.projectId);
 
@@ -226,7 +226,7 @@ export class MeetingService {
       throw new Error('FORBIDDEN');
     }
 
-    const changes: any = {};
+    const changes: Record<string, unknown> = {};
     if (data.title !== undefined) { meeting.title = data.title; changes.title = true; }
     if (data.description !== undefined) { meeting.description = data.description; }
     

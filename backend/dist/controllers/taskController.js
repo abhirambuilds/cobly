@@ -4,27 +4,27 @@ exports.TaskController = void 0;
 const taskService_1 = require("../services/taskService");
 class TaskController {
     static handleServiceError(error, res, next) {
-        if (error.message === 'WORKSPACE_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'WORKSPACE_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Workspace not found' } });
             return;
         }
-        if (error.message === 'PROJECT_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Project not found in this workspace' } });
             return;
         }
-        if (error.message === 'TASK_NOT_FOUND') {
+        if (error instanceof Error && error.message === 'TASK_NOT_FOUND') {
             res.status(404).json({ error: { message: 'Task not found in this project' } });
             return;
         }
-        if (error.message === 'FORBIDDEN') {
+        if (error instanceof Error && error.message === 'FORBIDDEN') {
             res.status(403).json({ error: { message: 'Forbidden: insufficient permissions' } });
             return;
         }
-        if (error.message === 'FORBIDDEN_FIELD_UPDATE') {
+        if (error instanceof Error && error.message === 'FORBIDDEN_FIELD_UPDATE') {
             res.status(403).json({ error: { message: 'Forbidden: you do not have permission to update one or more of these fields' } });
             return;
         }
-        if (error.message === 'INVALID_ASSIGNEE') {
+        if (error instanceof Error && error.message === 'INVALID_ASSIGNEE') {
             res.status(400).json({ error: { message: 'Assignee must be a member of the workspace' } });
             return;
         }
