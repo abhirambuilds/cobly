@@ -1,0 +1,29 @@
+# Dependencies (reinstalled inside the image via `npm ci`)
+node_modules
+
+# Build output (produced inside the image)
+dist
+
+# Secrets and local environment files — never copy these into the image
+.env
+.env.*
+
+# Tests, coverage, and local scratch work (not needed for the runtime image)
+tests
+coverage
+jest.config.js
+scratch
+*.log
+logs
+
+# Git and Docker metadata
+.git
+.gitignore
+.gitkeep
+.dockerignore
+Dockerfile
+
+# OS / editor files
+.DS_Store
+.vscode
+.idea

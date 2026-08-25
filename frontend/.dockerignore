@@ -1,0 +1,29 @@
+# Dependencies (reinstalled inside the image via `npm ci`)
+node_modules
+
+# Build output (produced inside the image)
+dist
+dist-ssr
+
+# Secrets and local environment files — never copy these into the image.
+# NOTE: nginx.conf is intentionally NOT ignored; the Dockerfile copies it.
+.env
+.env.*
+*.local
+
+# Coverage / logs / scratch
+coverage
+*.log
+logs
+scratch
+
+# Git and Docker metadata
+.git
+.gitignore
+.dockerignore
+Dockerfile
+
+# OS / editor files
+.DS_Store
+.vscode
+.idea

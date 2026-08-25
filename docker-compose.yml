@@ -1,0 +1,97 @@
+# Cobly — local/integration Docker stack: MongoDB + backend API + frontend (nginx).
+#
+# Quick start:
+#   1. cp .env.docker.example .env      # then set a strong JWT_SECRET
+#   2. docker compose build
+#   3. docker compose up -d
+#   4. Open the frontend at http://localhost:8080  (backend at http://localhost:5000)
+#
+# Notes:
+#   * Secrets (JWT_SECRET, any real MongoDB URI) live in .env, which is gitignored.
+#     Nothing secret is committed in this file.
+#   * MongoDB is only reachable on the internal Docker network (not published to the host).
+#   * VITE_API_URL is the URL the BROWSER uses; it must be host-reachable
+#     (http://localhost:5000/api), NOT the internal service name http://backend:5000.
+
+services:
+  # ---------------------------------------------------------------------------
+  # MongoDB — persistent data via a named volume, internal network only.
+  # ---------------------------------------------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: cobly-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cobly-network
+    # MongoDB is intentionally NOT published to the host. Uncomment ONLY if you
+    # need to connect a local GUI/CLI during development.
+    # ports:
+    #   - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Backend API — compiled TypeScript server (node dist/server.js).
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cobly-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      # Internal Docker network address for MongoDB (service name "mongo").
+      # No credentials here (Mongo runs unauthenticated on the private network).
+      # Override with a real/managed URI in .env for production if desired.
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/cobly}
+      # Required — no default. `docker compose` errors out if this is unset.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required. Copy .env.docker.example to .env and set a value of at least 32 characters.}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      # Must match the origin the browser loads the frontend from (CORS in prod).
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    networks:
+      - cobly-network
+    # Health check is defined in backend/Dockerfile (HEALTHCHECK -> /api/health/readiness).
+
+  # ---------------------------------------------------------------------------
+  # Frontend — static production build served by nginx with SPA fallback.
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # BUILD-TIME only: baked into the static bundle. Must be reachable from
+        # the user's BROWSER, so use the published backend host URL (+ /api),
+        # never the internal Docker service name.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+    container_name: cobly-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - cobly-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  cobly-network:
+    driver: bridge
