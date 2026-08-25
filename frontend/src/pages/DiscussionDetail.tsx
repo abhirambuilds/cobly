@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { discussionApi, commentApi } from '../services/discussion';
 import { projectApi } from '../services/project';
@@ -7,303 +8,504 @@ import type { Discussion, Comment } from '../types/discussion';
 import type { WorkspaceMember } from '../types/workspace';
 import type { Project } from '../types/project';
 import { useAuth } from '../hooks/useAuth';
+import { formatDateTime, formatRelativeTime } from '../utils/datetime';
+import {
+  Avatar,
+  Breadcrumbs,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  Field,
+  Icon,
+  IconButton,
+  Input,
+  Modal,
+  Skeleton,
+  Textarea,
+  useToast,
+} from '../ui';
 
 export function DiscussionDetail() {
   const { workspaceId, projectId, discussionId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [project, setProject] = useState<Project | null>(null);
+  const [workspaceName, setWorkspaceName] = useState('');
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
-  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Discussion Edit State
+  // Discussion edit
   const [isEditingDiscussion, setIsEditingDiscussion] = useState(false);
-  const [editDiscussionTitle, setEditDiscussionTitle] = useState('');
-  const [editDiscussionContent, setEditDiscussionContent] = useState('');
+  const [savingDiscussion, setSavingDiscussion] = useState(false);
+  const [edTitle, setEdTitle] = useState('');
+  const [edContent, setEdContent] = useState('');
+  const [confirmDeleteDiscussion, setConfirmDeleteDiscussion] = useState(false);
+  const [deletingDiscussion, setDeletingDiscussion] = useState(false);
 
-  // Comment Create State
-  const [isCreatingComment, setIsCreatingComment] = useState(false);
-  const [newCommentContent, setNewCommentContent] = useState('');
-
-  // Comment Edit State
+  // Comment compose / edit / delete
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
+  const [deletingComment, setDeletingComment] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!workspaceId || !projectId || !discussionId) return;
     setIsLoading(true);
     setError('');
     try {
-      const [projData, discData, commData, memData] = await Promise.all([
+      const [wsData, projData, discData, commData, memData] = await Promise.all([
+        workspaceApi.get(workspaceId),
         projectApi.get(workspaceId, projectId),
         discussionApi.get(workspaceId, projectId, discussionId),
         commentApi.list(workspaceId, projectId, discussionId),
-        workspaceApi.getMembers(workspaceId)
+        workspaceApi.getMembers(workspaceId),
       ]);
+      setWorkspaceName(wsData.workspace.name);
       setProject(projData.project);
       setDiscussion(discData.discussion);
       setComments(commData.comments);
       setMembers(memData.members);
-      
-      setEditDiscussionTitle(discData.discussion.title);
-      setEditDiscussionContent(discData.discussion.content);
     } catch (err: unknown) {
-      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load discussion details');
+      setError(err instanceof Error ? err.message : 'Failed to load this discussion.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workspaceId, projectId, discussionId]);
 
   useEffect(() => {
     loadData();
-  }, [workspaceId, projectId, discussionId]);
+  }, [loadData]);
 
-  // Discussion Handlers
-  const handleUpdateDiscussion = async (e: React.FormEvent) => {
+  /* ---- Discussion handlers ---- */
+  const openEditDiscussion = () => {
+    if (!discussion) return;
+    setEdTitle(discussion.title);
+    setEdContent(discussion.content);
+    setIsEditingDiscussion(true);
+  };
+
+  const handleUpdateDiscussion = async (e: FormEvent) => {
     e.preventDefault();
+    if (!edTitle.trim() || !edContent.trim() || savingDiscussion) return;
+    setSavingDiscussion(true);
     try {
-      await discussionApi.update(workspaceId!, projectId!, discussionId!, {
-        title: editDiscussionTitle,
-        content: editDiscussionContent
+      const res = await discussionApi.update(workspaceId!, projectId!, discussionId!, {
+        title: edTitle.trim(),
+        content: edContent.trim(),
       });
+      setDiscussion(res.discussion);
       setIsEditingDiscussion(false);
-      await loadData();
+      toast.success('Discussion updated.');
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update discussion');
+      toast.error(err instanceof Error ? err.message : 'Failed to update discussion.');
+    } finally {
+      setSavingDiscussion(false);
     }
   };
 
-  const handleDeleteDiscussion = async () => {
-    if (!window.confirm('Are you sure you want to delete this discussion?')) return;
+  const confirmDiscussionDelete = async () => {
+    setDeletingDiscussion(true);
     try {
       await discussionApi.delete(workspaceId!, projectId!, discussionId!);
+      toast.success('Discussion deleted.');
       navigate(`/dashboard/workspaces/${workspaceId}/projects/${projectId}`);
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete discussion');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete discussion.');
+      setDeletingDiscussion(false);
+      setConfirmDeleteDiscussion(false);
     }
   };
 
-  // Comment Handlers
-  const handleCreateComment = async (e: React.FormEvent) => {
+  /* ---- Comment handlers ---- */
+  const handleCreateComment = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newCommentContent.trim()) return;
-    setIsCreatingComment(true);
+    if (!newComment.trim() || postingComment) return;
+    setPostingComment(true);
     try {
-      await commentApi.create(workspaceId!, projectId!, discussionId!, {
-        content: newCommentContent
+      const res = await commentApi.create(workspaceId!, projectId!, discussionId!, {
+        content: newComment.trim(),
       });
-      setNewCommentContent('');
-      await loadData();
+      setComments((cs) => [...cs, res.comment]);
+      setNewComment('');
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create comment');
+      toast.error(err instanceof Error ? err.message : 'Failed to post comment.');
     } finally {
-      setIsCreatingComment(false);
+      setPostingComment(false);
     }
   };
 
-  const handleUpdateComment = async (e: React.FormEvent) => {
+  const openEditComment = (comment: Comment) => {
+    setEditingComment(comment);
+    setEditCommentText(comment.content);
+  };
+
+  const handleUpdateComment = async (e: FormEvent) => {
     e.preventDefault();
-    if (!editingComment || !editingComment.content.trim()) return;
+    if (!editingComment || !editCommentText.trim() || savingComment) return;
+    setSavingComment(true);
     try {
-      await commentApi.update(workspaceId!, projectId!, discussionId!, editingComment.id, {
-        content: editingComment.content
-      });
+      const res = await commentApi.update(
+        workspaceId!,
+        projectId!,
+        discussionId!,
+        editingComment.id,
+        { content: editCommentText.trim() },
+      );
+      setComments((cs) => cs.map((c) => (c.id === res.comment.id ? res.comment : c)));
       setEditingComment(null);
-      await loadData();
+      setEditCommentText('');
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update comment');
+      toast.error(err instanceof Error ? err.message : 'Failed to update comment.');
+    } finally {
+      setSavingComment(false);
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+  const confirmCommentDelete = async () => {
+    if (!commentToDelete) return;
+    setDeletingComment(true);
     try {
-      await commentApi.delete(workspaceId!, projectId!, discussionId!, commentId);
-      await loadData();
+      await commentApi.delete(workspaceId!, projectId!, discussionId!, commentToDelete.id);
+      setComments((cs) => cs.filter((c) => c.id !== commentToDelete.id));
+      setCommentToDelete(null);
+      toast.success('Comment deleted.');
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete comment');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete comment.');
+    } finally {
+      setDeletingComment(false);
     }
   };
 
-  if (isLoading) return <div className="text-gray-500">Loading discussion...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!discussion || !project) return <div className="text-gray-500">Discussion not found</div>;
+  /* ---- Render ---- */
+  if (isLoading) return <DiscussionSkeleton />;
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl py-8">
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
+  }
+  if (!discussion || !project) {
+    return (
+      <div className="mx-auto max-w-3xl py-8">
+        <EmptyState
+          icon="discussion"
+          title="Discussion not found"
+          message="This discussion may have been deleted or you no longer have access."
+          action={
+            <Link to={`/dashboard/workspaces/${workspaceId}/projects/${projectId}`}>
+              <Button variant="secondary" leftIcon="arrow-left">
+                Back to project
+              </Button>
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
 
-  const isWorkspaceOwner = members.find(m => m.user.id === user?.id)?.role === 'owner';
+  const isWorkspaceOwner = members.find((m) => m.user.id === user?.id)?.role === 'owner';
   const isProjectOwner = project.owner === user?.id;
-  const isDiscussionAuthor = discussion.author.id === user?.id;
-  
-  const canModifyDiscussion = isWorkspaceOwner || isProjectOwner || isDiscussionAuthor;
+  const canModifyDiscussion =
+    isWorkspaceOwner || isProjectOwner || discussion.author.id === user?.id;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
-      <Link to={`/dashboard/workspaces/${workspaceId}/projects/${projectId}`} className="text-sm text-blue-600 hover:underline mb-2 inline-block">
-        &larr; Back to Project
-      </Link>
-      
-      {/* Discussion Main Post */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight mb-2">{discussion.title}</h1>
-            <div className="flex items-center gap-3 text-sm text-gray-500">
-              <span className="font-medium text-gray-900">{discussion.author.name}</span>
-              <span>•</span>
-              <span>{new Date(discussion.createdAt).toLocaleString()}</span>
-            </div>
-          </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: 'Home', to: '/dashboard' },
+          { label: workspaceName || 'Workspace', to: `/dashboard/workspaces/${workspaceId}` },
+          {
+            label: project.name,
+            to: `/dashboard/workspaces/${workspaceId}/projects/${projectId}`,
+          },
+          { label: discussion.title },
+        ]}
+      />
+
+      {/* Main post */}
+      <Card signal className="p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 font-display text-2xl font-semibold leading-tight text-ink">
+            {discussion.title}
+          </h1>
           {canModifyDiscussion && (
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setIsEditingDiscussion(true)}
-                className="text-gray-600 hover:text-gray-900 text-sm font-medium border border-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
-              >
+            <div className="flex shrink-0 gap-2">
+              <Button variant="secondary" size="sm" leftIcon="edit" onClick={openEditDiscussion}>
                 Edit
-              </button>
-              <button 
-                onClick={handleDeleteDiscussion}
-                className="text-red-600 hover:text-red-800 text-sm font-medium border border-red-200 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+              </Button>
+              <Button
+                variant="subtle"
+                size="sm"
+                leftIcon="trash"
+                onClick={() => setConfirmDeleteDiscussion(true)}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           )}
         </div>
-        
-        <div className="prose max-w-none text-gray-800 whitespace-pre-wrap">
+
+        <div className="mt-3 flex flex-wrap items-center gap-2.5">
+          <Avatar name={discussion.author.name} seed={discussion.author.id} size="sm" />
+          <span className="text-[13.5px] font-medium text-ink">{discussion.author.name}</span>
+          <span className="text-faint">·</span>
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] text-faint">
+            <Icon name="clock" size={13} />
+            {formatDateTime(discussion.createdAt)}
+          </span>
+        </div>
+
+        <div className="mt-5 whitespace-pre-wrap border-t border-line pt-5 text-[15px] leading-relaxed text-ink/90">
           {discussion.content}
         </div>
-      </div>
+      </Card>
 
-      {/* Comments Section */}
-      <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Comments ({comments.length})</h3>
-        
-        <div className="space-y-4 mb-8">
-          {comments.map(comment => {
-            const isCommentAuthor = comment.author.id === user?.id;
-            const canModifyComment = isWorkspaceOwner || isProjectOwner || isCommentAuthor;
-            
-            return (
-              <div key={comment.id} className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-3 text-sm text-gray-500">
-                    <span className="font-medium text-gray-900">{comment.author.name}</span>
-                    <span>•</span>
-                    <span>{new Date(comment.createdAt).toLocaleString()}</span>
-                    {comment.updatedAt !== comment.createdAt && <span className="italic">(edited)</span>}
-                  </div>
-                  {canModifyComment && (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => setEditingComment(comment)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                {editingComment?.id === comment.id ? (
-                  <form onSubmit={handleUpdateComment} className="mt-2">
-                    <textarea
-                      aria-label="Edit comment"
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                      rows={3}
-                      value={editingComment.content}
-                      onChange={e => setEditingComment({...editingComment, content: e.target.value})}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => setEditingComment(null)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors">Cancel</button>
-                      <button type="submit" className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">Save</button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="text-gray-800 whitespace-pre-wrap text-sm">
-                    {comment.content}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {comments.length === 0 && (
-            <div className="text-center p-8 bg-gray-50 border border-gray-200 rounded-lg text-gray-500">
-              No comments yet. Be the first to share your thoughts.
-            </div>
-          )}
-        </div>
+      {/* Comments */}
+      <section className="space-y-4">
+        <h2 className="flex items-center gap-2 font-display text-base font-semibold text-ink">
+          <Icon name="discussion" size={17} className="text-faint" />
+          {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+        </h2>
 
-        {/* Create Comment Form */}
-        <form onSubmit={handleCreateComment} className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-          <h4 className="font-semibold text-gray-900 mb-3">Add a Comment</h4>
-          <textarea
-            required
-            aria-label="Add a comment"
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-            rows={4}
-            placeholder="Write your comment here..."
-            value={newCommentContent}
-            onChange={e => setNewCommentContent(e.target.value)}
-            disabled={isCreatingComment}
+        {comments.length === 0 ? (
+          <EmptyState
+            icon="discussion"
+            title="No comments yet"
+            message="Be the first to reply and keep the conversation going."
           />
-          <div className="flex justify-end">
-            <button 
-              type="submit"
-              disabled={isCreatingComment || !newCommentContent.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md font-medium transition-colors"
-            >
-              {isCreatingComment ? 'Posting...' : 'Post Comment'}
-            </button>
-          </div>
-        </form>
-      </div>
+        ) : (
+          <ul className="space-y-3">
+            {comments.map((comment) => {
+              const canModifyComment =
+                isWorkspaceOwner || isProjectOwner || comment.author.id === user?.id;
+              const edited = comment.updatedAt !== comment.createdAt;
+              const isEditing = editingComment?.id === comment.id;
 
-      {/* Edit Discussion Modal */}
-      {isEditingDiscussion && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl">
-            <h3 className="text-lg font-bold mb-4">Edit Discussion</h3>
-            <form onSubmit={handleUpdateDiscussion}>
-              <div className="mb-4">
-                <label htmlFor="disc-edit-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  id="disc-edit-title"
-                  required
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={editDiscussionTitle}
-                  onChange={e => setEditDiscussionTitle(e.target.value)}
-                />
-              </div>
-              <div className="mb-6">
-                <label htmlFor="disc-edit-content" className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                <textarea
-                  id="disc-edit-content"
-                  required
-                  rows={8}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={editDiscussionContent}
-                  onChange={e => setEditDiscussionContent(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setIsEditingDiscussion(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">Save Changes</button>
-              </div>
-            </form>
-          </div>
+              return (
+                <li key={comment.id}>
+                  <Card className="p-4 sm:p-5">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={comment.author.name} seed={comment.author.id} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-[13.5px] font-medium text-ink">
+                          {comment.author.name}
+                          {comment.author.id === user?.id && (
+                            <span className="ml-1.5 text-[11px] font-normal text-faint">You</span>
+                          )}
+                        </p>
+                        <p className="text-[11.5px] text-faint">
+                          {formatRelativeTime(comment.createdAt)}
+                          {edited && <span className="italic"> · edited</span>}
+                        </p>
+                      </div>
+                      {canModifyComment && !isEditing && (
+                        <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                          <IconButton
+                            icon="edit"
+                            label="Edit comment"
+                            size="sm"
+                            onClick={() => openEditComment(comment)}
+                            className="text-faint hover:text-ink"
+                          />
+                          <IconButton
+                            icon="trash"
+                            label="Delete comment"
+                            size="sm"
+                            onClick={() => setCommentToDelete(comment)}
+                            className="text-faint hover:text-danger"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <form onSubmit={handleUpdateComment} className="mt-3 space-y-2.5">
+                        <Textarea
+                          aria-label="Edit comment"
+                          required
+                          rows={3}
+                          value={editCommentText}
+                          onChange={(e) => setEditCommentText(e.target.value)}
+                          disabled={savingComment}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="subtle"
+                            size="sm"
+                            onClick={() => setEditingComment(null)}
+                            disabled={savingComment}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            size="sm"
+                            loading={savingComment}
+                            disabled={!editCommentText.trim()}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">
+                        {comment.content}
+                      </div>
+                    )}
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {/* Composer */}
+        <Card className="p-4 sm:p-5">
+          <form onSubmit={handleCreateComment} className="space-y-3">
+            <Field htmlFor="new-comment" label="Add a comment">
+              <Textarea
+                id="new-comment"
+                required
+                rows={4}
+                placeholder="Share your thoughts…"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                disabled={postingComment}
+              />
+            </Field>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                leftIcon="send"
+                loading={postingComment}
+                disabled={!newComment.trim()}
+              >
+                Post comment
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </section>
+
+      {/* Edit discussion modal */}
+      <Modal
+        open={isEditingDiscussion}
+        onClose={() => !savingDiscussion && setIsEditingDiscussion(false)}
+        title="Edit discussion"
+        icon="edit"
+        size="lg"
+        dismissOnBackdrop={!savingDiscussion}
+        footer={
+          <>
+            <Button
+              variant="subtle"
+              onClick={() => setIsEditingDiscussion(false)}
+              disabled={savingDiscussion}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-discussion-form"
+              loading={savingDiscussion}
+              disabled={!edTitle.trim() || !edContent.trim()}
+            >
+              Save changes
+            </Button>
+          </>
+        }
+      >
+        <form id="edit-discussion-form" onSubmit={handleUpdateDiscussion} className="space-y-4">
+          <Field htmlFor="ed-title" label="Title" required>
+            <Input
+              id="ed-title"
+              data-autofocus
+              required
+              value={edTitle}
+              maxLength={200}
+              onChange={(e) => setEdTitle(e.target.value)}
+            />
+          </Field>
+          <Field htmlFor="ed-content" label="Message" required>
+            <Textarea
+              id="ed-content"
+              required
+              rows={8}
+              value={edContent}
+              onChange={(e) => setEdContent(e.target.value)}
+            />
+          </Field>
+        </form>
+      </Modal>
+
+      {/* Confirm: delete discussion */}
+      <ConfirmDialog
+        open={confirmDeleteDiscussion}
+        onClose={() => !deletingDiscussion && setConfirmDeleteDiscussion(false)}
+        onConfirm={confirmDiscussionDelete}
+        loading={deletingDiscussion}
+        title="Delete discussion"
+        message={
+          <>
+            Delete <span className="font-medium text-ink">{discussion.title}</span> and all its
+            comments? This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete discussion"
+      />
+
+      {/* Confirm: delete comment */}
+      <ConfirmDialog
+        open={!!commentToDelete}
+        onClose={() => !deletingComment && setCommentToDelete(null)}
+        onConfirm={confirmCommentDelete}
+        loading={deletingComment}
+        title="Delete comment"
+        message="Delete this comment? This cannot be undone."
+        confirmLabel="Delete comment"
+      />
+    </div>
+  );
+}
+
+function DiscussionSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <Skeleton className="h-3.5 w-72 max-w-full" />
+      <Card className="space-y-4 p-6 sm:p-7">
+        <Skeleton className="h-7 w-2/3" />
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-4 w-40" />
         </div>
-      )}
+        <div className="space-y-2 border-t border-line pt-5">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </Card>
+      <Skeleton className="h-5 w-32" />
+      {[0, 1].map((i) => (
+        <Card key={i} className="space-y-3 p-4 sm:p-5">
+          <div className="flex items-center gap-2.5">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </Card>
+      ))}
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { meetingApi } from '../services/meeting';
 import { projectApi } from '../services/project';
@@ -7,21 +8,51 @@ import type { Meeting, MeetingStatus } from '../types/meeting';
 import type { Project } from '../types/project';
 import type { WorkspaceMember } from '../types/workspace';
 import { useAuth } from '../hooks/useAuth';
-import { toDatetimeLocalValue } from '../utils/datetime';
+import { toDatetimeLocalValue, formatDate, formatTime } from '../utils/datetime';
+import { AttendeePicker } from '../components/AttendeePicker';
+import {
+  Avatar,
+  Badge,
+  Breadcrumbs,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  Field,
+  Icon,
+  Input,
+  MeetingStatusBadge,
+  Modal,
+  Select,
+  Skeleton,
+  Textarea,
+  useToast,
+} from '../ui';
+
+const STATUS_OPTIONS: { value: MeetingStatus; label: string }[] = [
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 export function MeetingDetail() {
   const { workspaceId, meetingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
+  const [workspaceName, setWorkspaceName] = useState('');
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Edit State
+  // Edit state
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editProjectId, setEditProjectId] = useState('');
@@ -31,267 +62,434 @@ export function MeetingDetail() {
   const [editStatus, setEditStatus] = useState<MeetingStatus>('scheduled');
   const [editAttendees, setEditAttendees] = useState<string[]>([]);
 
-  const loadData = async () => {
+  // Delete
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const loadData = useCallback(async () => {
     if (!workspaceId || !meetingId) return;
     setIsLoading(true);
     setError('');
     try {
-      const [meetingData, projectsData, membersData] = await Promise.all([
+      const [wsData, meetingData, projectsData, membersData] = await Promise.all([
+        workspaceApi.get(workspaceId),
         meetingApi.get(workspaceId, meetingId),
         projectApi.list(workspaceId),
-        workspaceApi.getMembers(workspaceId)
+        workspaceApi.getMembers(workspaceId),
       ]);
+      setWorkspaceName(wsData.workspace.name);
       setMeeting(meetingData.meeting);
       setProjects(projectsData.projects);
       setMembers(membersData.members);
-      
-      setEditTitle(meetingData.meeting.title);
-      setEditDesc(meetingData.meeting.description || '');
-      setEditProjectId(meetingData.meeting.projectId || '');
-      setEditStart(toDatetimeLocalValue(meetingData.meeting.startTime));
-      setEditEnd(toDatetimeLocalValue(meetingData.meeting.endTime));
-      setEditLink(meetingData.meeting.meetingLink || '');
-      setEditStatus(meetingData.meeting.status);
-      setEditAttendees(meetingData.meeting.attendees.map(a => a.id));
     } catch (err: unknown) {
-      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load meeting');
+      setError(err instanceof Error ? err.message : 'Failed to load this meeting.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workspaceId, meetingId]);
 
   useEffect(() => {
     loadData();
-  }, [workspaceId, meetingId]);
+  }, [loadData]);
 
-  const toggleAttendee = (userId: string) => {
-    if (editAttendees.includes(userId)) {
-      setEditAttendees(editAttendees.filter(id => id !== userId));
-    } else {
-      setEditAttendees([...editAttendees, userId]);
-    }
+  const openEdit = () => {
+    if (!meeting) return;
+    setFormError('');
+    setEditTitle(meeting.title);
+    setEditDesc(meeting.description || '');
+    setEditProjectId(meeting.projectId || '');
+    setEditStart(toDatetimeLocalValue(meeting.startTime));
+    setEditEnd(toDatetimeLocalValue(meeting.endTime));
+    setEditLink(meeting.meetingLink || '');
+    setEditStatus(meeting.status);
+    setEditAttendees(meeting.attendees.map((a) => a.id));
+    setIsEditing(true);
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const toggleAttendee = (userId: string) => {
+    setEditAttendees((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+    );
+  };
+
+  const handleUpdate = async (e: FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setFormError('');
+    if (new Date(editStart) >= new Date(editEnd)) {
+      setFormError('End time must be after the start time.');
+      return;
+    }
+    setSaving(true);
     try {
-      if (new Date(editStart) >= new Date(editEnd)) {
-        throw new Error('End time must be after start time');
-      }
-      await meetingApi.update(workspaceId!, meetingId!, {
-        title: editTitle,
-        description: editDesc,
+      const res = await meetingApi.update(workspaceId!, meetingId!, {
+        title: editTitle.trim(),
+        description: editDesc.trim(),
         projectId: editProjectId || undefined,
         startTime: new Date(editStart).toISOString(),
         endTime: new Date(editEnd).toISOString(),
-        meetingLink: editLink,
+        meetingLink: editLink.trim(),
         status: editStatus,
-        attendees: editAttendees
+        attendees: editAttendees,
       });
+      setMeeting(res.meeting);
       setIsEditing(false);
-      await loadData();
+      toast.success('Meeting updated.');
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to update meeting');
+      setFormError(err instanceof Error ? err.message : 'Failed to update meeting.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this meeting?')) return;
+  const confirmMeetingDelete = async () => {
+    setDeleting(true);
     try {
       await meetingApi.delete(workspaceId!, meetingId!);
+      toast.success('Meeting deleted.');
       navigate(`/dashboard/workspaces/${workspaceId}/meetings`);
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to delete meeting');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete meeting.');
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
-  if (isLoading) return <div className="text-gray-500">Loading meeting...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!meeting) return <div className="text-gray-500">Meeting not found</div>;
+  if (isLoading) return <MeetingDetailSkeleton />;
+  if (error) {
+    return (
+      <div className="mx-auto max-w-4xl py-8">
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
+  }
+  if (!meeting) {
+    return (
+      <div className="mx-auto max-w-4xl py-8">
+        <EmptyState
+          icon="calendar"
+          title="Meeting not found"
+          message="This meeting may have been deleted or you no longer have access."
+          action={
+            <Link to={`/dashboard/workspaces/${workspaceId}/meetings`}>
+              <Button variant="secondary" leftIcon="arrow-left">
+                Back to meetings
+              </Button>
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
 
-  const isWorkspaceOwner = members.find(m => m.user.id === user?.id)?.role === 'owner';
+  const isWorkspaceOwner = members.find((m) => m.user.id === user?.id)?.role === 'owner';
   const isOrganizer = meeting.organizer === user?.id;
   const canModify = isWorkspaceOwner || isOrganizer;
 
-  const getStatusColor = (status: string) => {
-    if (status === 'scheduled') return 'bg-blue-100 text-blue-800';
-    if (status === 'completed') return 'bg-green-100 text-green-800';
-    return 'bg-gray-100 text-gray-800';
-  };
-
-  const projectName = meeting.projectId ? projects.find(p => p.id === meeting.projectId)?.name : null;
+  const organizer = members.find((m) => m.user.id === meeting.organizer)?.user;
+  const projectName = meeting.projectId
+    ? projects.find((p) => p.id === meeting.projectId)?.name
+    : undefined;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <Link to={`/dashboard/workspaces/${workspaceId}/meetings`} className="text-sm text-blue-600 hover:underline mb-2 inline-block">
-        &larr; Back to Meetings
-      </Link>
-      
-      <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
-        {/* Status Banner */}
-        <div className={`absolute top-0 left-0 w-full h-2 ${meeting.status === 'cancelled' ? 'bg-red-400' : meeting.status === 'completed' ? 'bg-green-400' : 'bg-blue-400'}`} />
-        
-        <div className="flex justify-between items-start mb-6 mt-2">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">{meeting.title}</h1>
-              <span className={`capitalize text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(meeting.status)}`}>
-                {meeting.status}
-              </span>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: 'Home', to: '/dashboard' },
+          { label: workspaceName || 'Workspace', to: `/dashboard/workspaces/${workspaceId}` },
+          { label: 'Meetings', to: `/dashboard/workspaces/${workspaceId}/meetings` },
+          { label: meeting.title },
+        ]}
+      />
+
+      {/* Hero */}
+      <Card signal className="p-6 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-display text-2xl font-semibold leading-tight text-ink">
+                {meeting.title}
+              </h1>
+              <MeetingStatusBadge status={meeting.status} />
             </div>
             {projectName && (
-              <p className="text-sm text-indigo-600 font-medium">Project: {projectName}</p>
+              <Link
+                to={`/dashboard/workspaces/${workspaceId}/projects/${meeting.projectId}`}
+                className="mt-2 inline-flex"
+              >
+                <Badge tone="violet" icon="folder">
+                  {projectName}
+                </Badge>
+              </Link>
             )}
           </div>
-          
+
           {canModify && (
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="text-gray-600 hover:text-gray-900 text-sm font-medium border border-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
-              >
+            <div className="flex shrink-0 gap-2">
+              <Button variant="secondary" size="sm" leftIcon="edit" onClick={openEdit}>
                 Edit
-              </button>
-              <button 
-                onClick={handleDelete}
-                className="text-red-600 hover:text-red-800 text-sm font-medium border border-red-200 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+              </Button>
+              <Button
+                variant="subtle"
+                size="sm"
+                leftIcon="trash"
+                onClick={() => setConfirmDelete(true)}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           )}
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
-            <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</h4>
-              <p className="text-gray-800 whitespace-pre-wrap">{meeting.description || 'No description provided.'}</p>
-            </div>
-            
+
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {/* Main column */}
+          <div className="space-y-6 md:col-span-2">
+            <section>
+              <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-faint">
+                Description
+              </h2>
+              {meeting.description ? (
+                <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed text-ink/90">
+                  {meeting.description}
+                </p>
+              ) : (
+                <p className="text-[13.5px] italic text-faint">No description provided.</p>
+              )}
+            </section>
+
             {meeting.meetingLink && (
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Meeting Link</h4>
-                <a 
-                  href={meeting.meetingLink} 
-                  target="_blank" 
+              <section>
+                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-faint">
+                  Meeting link
+                </h2>
+                <a
+                  href={meeting.meetingLink}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium bg-blue-50 px-4 py-2 rounded-md transition-colors border border-blue-100"
+                  className="inline-flex items-center gap-2 rounded-xl border border-brand/30 bg-brand/10 px-4 py-2.5 text-[13.5px] font-medium text-brand-strong transition-colors hover:border-brand/50 hover:bg-brand/15"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  Join Meeting
+                  <Icon name="external-link" size={15} />
+                  Join meeting
                 </a>
-              </div>
+              </section>
             )}
           </div>
-          
-          <div className="bg-gray-50 p-5 rounded-lg border border-gray-100 space-y-5">
-            <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">When</h4>
-              <div className="text-gray-900 font-medium">
-                <div>{new Date(meeting.startTime).toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                <div className="text-gray-600">
-                  {new Date(meeting.startTime).toLocaleTimeString([], { timeStyle: 'short' })} - {new Date(meeting.endTime).toLocaleTimeString([], { timeStyle: 'short' })}
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Organizer</h4>
-              <div className="text-gray-900">{members.find(m => m.user.id === meeting.organizer)?.user.name || 'Unknown'}</div>
-            </div>
-            
-            <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Attendees ({meeting.attendees.length})</h4>
-              <ul className="space-y-2">
-                {meeting.attendees.map(a => (
-                  <li key={a.id} className="flex items-center gap-2 text-sm text-gray-800 bg-white px-3 py-1.5 rounded border border-gray-200">
-                    <div className="h-5 w-5 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-[10px] font-bold">
-                      {a.name.charAt(0).toUpperCase()}
-                    </div>
-                    {a.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {isEditing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto pt-10 pb-10">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl my-auto">
-            <h3 className="text-lg font-bold mb-4">Edit Meeting</h3>
-            <form onSubmit={handleUpdate}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="col-span-2">
-                  <label htmlFor="edit-meeting-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input id="edit-meeting-title" required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+          {/* Side panel */}
+          <aside className="space-y-5 rounded-2xl border border-line bg-surface-2 p-5">
+            <div>
+              <h2 className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">
+                <Icon name="clock" size={13} />
+                When
+              </h2>
+              <p className="text-[14px] font-medium text-ink">{formatDate(meeting.startTime)}</p>
+              <p className="text-[13px] text-muted">
+                {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
+              </p>
+            </div>
+
+            <div className="border-t border-line pt-4">
+              <h2 className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">
+                <Icon name="crown" size={13} />
+                Organizer
+              </h2>
+              {organizer ? (
+                <div className="flex items-center gap-2">
+                  <Avatar name={organizer.name} seed={organizer.id} size="sm" />
+                  <span className="text-[13.5px] text-ink">{organizer.name}</span>
                 </div>
-                <div className="col-span-2">
-                  <label htmlFor="edit-meeting-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea id="edit-meeting-desc" rows={3} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="edit-meeting-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select id="edit-meeting-status" className="w-full px-3 py-2 border rounded-md bg-white" value={editStatus} onChange={e => setEditStatus(e.target.value as MeetingStatus)}>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="edit-meeting-project" className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                  <select id="edit-meeting-project" className="w-full px-3 py-2 border rounded-md bg-white" value={editProjectId} onChange={e => setEditProjectId(e.target.value)}>
-                    <option value="">-- Workspace Level --</option>
-                    {projects.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="edit-meeting-start" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                  <input id="edit-meeting-start" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editStart} onChange={e => setEditStart(e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="edit-meeting-end" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                  <input id="edit-meeting-end" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editEnd} onChange={e => setEditEnd(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="edit-meeting-link" className="block text-sm font-medium text-gray-700 mb-1">Meeting Link</label>
-                  <input id="edit-meeting-link" type="url" className="w-full px-3 py-2 border rounded-md" value={editLink} onChange={e => setEditLink(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label id="edit-meeting-attendees-label" className="block text-sm font-medium text-gray-700 mb-1">Attendees ({editAttendees.length} selected)</label>
-                  <div role="group" aria-labelledby="edit-meeting-attendees-label" className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-2">
-                    {members.map(m => {
-                      const isSelected = editAttendees.includes(m.user.id);
-                      return (
-                        <button
-                          key={m.user.id}
-                          type="button"
-                          onClick={() => toggleAttendee(m.user.id)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                            isSelected ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {m.user.name} {isSelected && '✓'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">Save Changes</button>
-              </div>
-            </form>
+              ) : (
+                <span className="text-[13px] text-faint">Unknown</span>
+              )}
+            </div>
+
+            <div className="border-t border-line pt-4">
+              <h2 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">
+                <Icon name="users" size={13} />
+                Attendees ({meeting.attendees.length})
+              </h2>
+              {meeting.attendees.length === 0 ? (
+                <span className="text-[13px] text-faint">No attendees invited.</span>
+              ) : (
+                <ul className="space-y-2">
+                  {meeting.attendees.map((a) => (
+                    <li key={a.id} className="flex items-center gap-2">
+                      <Avatar name={a.name} seed={a.id} size="xs" />
+                      <span className="truncate text-[13px] text-ink/90">
+                        {a.name}
+                        {a.id === user?.id && (
+                          <span className="ml-1.5 text-[11px] text-faint">You</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </aside>
+        </div>
+      </Card>
+
+      {/* Edit modal */}
+      <Modal
+        open={isEditing}
+        onClose={() => !saving && setIsEditing(false)}
+        title="Edit meeting"
+        icon="edit"
+        size="lg"
+        dismissOnBackdrop={!saving}
+        footer={
+          <>
+            <Button variant="subtle" onClick={() => setIsEditing(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-meeting-form"
+              loading={saving}
+              disabled={!editTitle.trim() || !editStart || !editEnd}
+            >
+              Save changes
+            </Button>
+          </>
+        }
+      >
+        <form id="edit-meeting-form" onSubmit={handleUpdate} className="space-y-4">
+          {formError && (
+            <p className="tone-danger flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px]">
+              <Icon name="alert-triangle" size={15} />
+              {formError}
+            </p>
+          )}
+          <Field htmlFor="e-title" label="Title" required>
+            <Input
+              id="e-title"
+              data-autofocus
+              required
+              value={editTitle}
+              maxLength={200}
+              onChange={(e) => setEditTitle(e.target.value)}
+            />
+          </Field>
+          <Field htmlFor="e-desc" label="Description" hint="Optional.">
+            <Textarea
+              id="e-desc"
+              rows={2}
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field htmlFor="e-status" label="Status">
+              <Select
+                id="e-status"
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value as MeetingStatus)}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field htmlFor="e-project" label="Project" hint="Optional.">
+              <Select
+                id="e-project"
+                value={editProjectId}
+                onChange={(e) => setEditProjectId(e.target.value)}
+              >
+                <option value="">Workspace-level</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field htmlFor="e-start" label="Start" required>
+              <Input
+                id="e-start"
+                required
+                type="datetime-local"
+                value={editStart}
+                invalid={!!formError && !!editStart && !!editEnd}
+                onChange={(e) => setEditStart(e.target.value)}
+              />
+            </Field>
+            <Field htmlFor="e-end" label="End" required>
+              <Input
+                id="e-end"
+                required
+                type="datetime-local"
+                value={editEnd}
+                invalid={!!formError && !!editStart && !!editEnd}
+                onChange={(e) => setEditEnd(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Field htmlFor="e-link" label="Meeting link" hint="Optional.">
+            <Input
+              id="e-link"
+              type="url"
+              placeholder="https://…"
+              value={editLink}
+              onChange={(e) => setEditLink(e.target.value)}
+            />
+          </Field>
+          <Field label={`Attendees (${editAttendees.length} selected)`}>
+            <AttendeePicker
+              members={members}
+              selected={editAttendees}
+              onToggle={toggleAttendee}
+              disabled={saving}
+            />
+          </Field>
+        </form>
+      </Modal>
+
+      {/* Confirm delete */}
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => !deleting && setConfirmDelete(false)}
+        onConfirm={confirmMeetingDelete}
+        loading={deleting}
+        title="Delete meeting"
+        message={
+          <>
+            Delete <span className="font-medium text-ink">{meeting.title}</span>? This cannot be
+            undone.
+          </>
+        }
+        confirmLabel="Delete meeting"
+      />
+    </div>
+  );
+}
+
+function MeetingDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      <Skeleton className="h-3.5 w-80 max-w-full" />
+      <Card className="p-6 sm:p-7">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-1/2" />
+          <Skeleton className="h-8 w-32" />
+        </div>
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="space-y-3 md:col-span-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+          <div className="space-y-4 rounded-2xl border border-line bg-surface-2 p-5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-28" />
           </div>
         </div>
-      )}
+      </Card>
     </div>
   );
 }

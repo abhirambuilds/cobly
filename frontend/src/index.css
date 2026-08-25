@@ -1,1 +1,313 @@
 @import "tailwindcss";
+
+/* ============================================================================
+   COBLY DESIGN SYSTEM
+   Dark-first, futuristic-but-professional. Deep near-black surfaces, an
+   electric-blue brand with violet/cyan accents, and a recurring "signal"
+   gradient hairline as the signature motif. Type pairs Space Grotesk (display)
+   with Inter (UI) and JetBrains Mono (data/labels) for a precise, technical feel.
+   ========================================================================== */
+
+@theme {
+  /* ---- Surfaces & lines (near-black, faint blue undertone) ---- */
+  --color-canvas: #0a0b0f;
+  --color-surface: #101219;
+  --color-surface-2: #161a23;
+  --color-panel: #0d0f16;
+  --color-line: #21242e;
+  --color-line-strong: #2c313d;
+
+  /* ---- Text ---- */
+  --color-ink: #e9ebf2;
+  --color-muted: #9aa1b2;
+  --color-faint: #656c7e;
+
+  /* ---- Brand (electric blue) + accents ---- */
+  --color-brand: #5b8cff;
+  --color-brand-strong: #7ba3ff;
+  --color-brand-600: #4f7cff;
+  --color-brand-700: #3f66e6;
+  --color-violet: #9a70ff;
+  --color-cyan: #34d3ee;
+
+  /* ---- Status ---- */
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #fb7185;
+  --color-danger-600: #f43f5e;
+
+  /* ---- Type roles ---- */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "SFMono-Regular",
+    Menlo, Consolas, monospace;
+
+  /* ---- Elevation ---- */
+  --shadow-card: 0 1px 0 0 rgba(255, 255, 255, 0.02) inset,
+    0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 20px 60px -20px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-glow: 0 10px 40px -12px color-mix(in oklab, var(--color-brand) 55%, transparent);
+}
+
+/* ============================================================================
+   BASE
+   ========================================================================== */
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: -0.006em;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Selection */
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand) 38%, transparent);
+    color: #fff;
+  }
+
+  /* Keyboard focus — visible, brand-tinted, never removed.
+     (Outline follows each element's own border-radius automatically.) */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 999px;
+    border: 3px solid var(--color-canvas);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3b414f;
+  }
+
+  /* Autofill — keep dark */
+  input:-webkit-autofill,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-ink);
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-surface-2) inset;
+    caret-color: var(--color-ink);
+    transition: background-color 9999s ease-out 0s;
+  }
+}
+
+/* ============================================================================
+   SIGNATURE & AMBIENT HELPERS
+   ========================================================================== */
+@layer components {
+  /* The "signal": cyan -> blue -> violet gradient hairline / accent */
+  .signal-line {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-cyan),
+      var(--color-brand),
+      var(--color-violet)
+    );
+  }
+  .signal-text {
+    background-image: linear-gradient(
+      92deg,
+      var(--color-cyan),
+      var(--color-brand-strong) 45%,
+      var(--color-violet)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Ambient aurora glow behind hero / auth / headers */
+  .aurora {
+    position: relative;
+    isolation: isolate;
+  }
+  .aurora::before {
+    content: "";
+    position: absolute;
+    inset: -10% -5% auto -5%;
+    height: 130%;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(46% 40% at 12% 8%, color-mix(in oklab, var(--color-brand) 30%, transparent), transparent 70%),
+      radial-gradient(42% 38% at 88% 12%, color-mix(in oklab, var(--color-violet) 26%, transparent), transparent 70%),
+      radial-gradient(50% 50% at 55% 100%, color-mix(in oklab, var(--color-cyan) 16%, transparent), transparent 72%);
+    filter: blur(30px) saturate(120%);
+    opacity: 0.9;
+  }
+
+  /* Faint engineering grid, masked to fade at edges */
+  .grid-field {
+    position: relative;
+    isolation: isolate;
+  }
+  .grid-field::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(color-mix(in oklab, #fff 3.5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, #fff 3.5%, transparent) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, #000 30%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, #000 30%, transparent 78%);
+  }
+
+  /* Glassy surface */
+  .glass {
+    background: color-mix(in oklab, var(--color-surface) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-surface-2);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, #fff 7%, transparent),
+      transparent
+    );
+    animation: cobly-shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Tonal tints — translucent fills for badges, chips, and icon backgrounds.
+     Set only text/background/border color; shape & size come from utilities. */
+  .tone-neutral {
+    color: var(--color-muted);
+    background-color: color-mix(in oklab, #fff 6%, transparent);
+    border-color: color-mix(in oklab, #fff 12%, transparent);
+  }
+  .tone-brand {
+    color: var(--color-brand-strong);
+    background-color: color-mix(in oklab, var(--color-brand) 15%, transparent);
+    border-color: color-mix(in oklab, var(--color-brand) 32%, transparent);
+  }
+  .tone-violet {
+    color: #baa4ff;
+    background-color: color-mix(in oklab, var(--color-violet) 16%, transparent);
+    border-color: color-mix(in oklab, var(--color-violet) 34%, transparent);
+  }
+  .tone-cyan {
+    color: #7fe3f4;
+    background-color: color-mix(in oklab, var(--color-cyan) 15%, transparent);
+    border-color: color-mix(in oklab, var(--color-cyan) 32%, transparent);
+  }
+  .tone-success {
+    color: #6ee7b7;
+    background-color: color-mix(in oklab, var(--color-success) 15%, transparent);
+    border-color: color-mix(in oklab, var(--color-success) 32%, transparent);
+  }
+  .tone-warning {
+    color: #fcd34d;
+    background-color: color-mix(in oklab, var(--color-warning) 15%, transparent);
+    border-color: color-mix(in oklab, var(--color-warning) 34%, transparent);
+  }
+  .tone-danger {
+    color: #fda4af;
+    background-color: color-mix(in oklab, var(--color-danger) 15%, transparent);
+    border-color: color-mix(in oklab, var(--color-danger) 34%, transparent);
+  }
+}
+
+/* ============================================================================
+   MOTION — subtle, purposeful, opt-out via reduced-motion
+   ========================================================================== */
+@keyframes cobly-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cobly-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cobly-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cobly-shimmer {
+  100% { transform: translateX(100%); }
+}
+@keyframes cobly-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes cobly-toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cobly-pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.animate-fade { animation: cobly-fade 0.3s ease-out both; }
+.animate-rise { animation: cobly-rise 0.42s cubic-bezier(0.22, 0.7, 0.2, 1) both; }
+.animate-scale-in { animation: cobly-scale-in 0.2s ease-out both; }
+.animate-toast-in { animation: cobly-toast-in 0.28s cubic-bezier(0.22, 0.7, 0.2, 1) both; }
+.spin { animation: cobly-spin 0.7s linear infinite; }
+.pulse-dot { animation: cobly-pulse-dot 1.8s ease-in-out infinite; }
+
+/* Stagger helper for lists/grids */
+.stagger > * { animation: cobly-rise 0.42s cubic-bezier(0.22, 0.7, 0.2, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(8) { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .skeleton::after { animation: none; }
+}

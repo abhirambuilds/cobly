@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
-import { MainLayout } from './layouts/MainLayout';
+import { ToastProvider } from './ui';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
@@ -17,29 +17,40 @@ import { NotFound } from './pages/NotFound';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Landing />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            
+      <ToastProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public, full-bleed routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Authenticated app shell */}
             <Route element={<ProtectedRoute />}>
-              <Route path="dashboard" element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardHome />} />
                 <Route path="workspaces/:workspaceId" element={<WorkspaceOverview />} />
                 <Route path="workspaces/:workspaceId/meetings" element={<MeetingList />} />
-                <Route path="workspaces/:workspaceId/meetings/:meetingId" element={<MeetingDetail />} />
-                <Route path="workspaces/:workspaceId/projects/:projectId" element={<ProjectDetail />} />
-                <Route path="workspaces/:workspaceId/projects/:projectId/discussions/:discussionId" element={<DiscussionDetail />} />
+                <Route
+                  path="workspaces/:workspaceId/meetings/:meetingId"
+                  element={<MeetingDetail />}
+                />
+                <Route
+                  path="workspaces/:workspaceId/projects/:projectId"
+                  element={<ProjectDetail />}
+                />
+                <Route
+                  path="workspaces/:workspaceId/projects/:projectId/discussions/:discussionId"
+                  element={<DiscussionDetail />}
+                />
               </Route>
             </Route>
 
-            {/* Catch-all: render a friendly 404 inside the app shell */}
+            {/* Catch-all 404 */}
             <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

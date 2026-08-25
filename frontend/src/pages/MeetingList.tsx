@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { meetingApi } from '../services/meeting';
 import { projectApi } from '../services/project';
@@ -6,18 +7,41 @@ import { workspaceApi } from '../services/workspace';
 import type { Meeting } from '../types/meeting';
 import type { Project } from '../types/project';
 import type { WorkspaceMember } from '../types/workspace';
+import { formatDateTime, formatTime } from '../utils/datetime';
+import { AttendeePicker } from '../components/AttendeePicker';
+import {
+  AvatarStack,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Field,
+  Icon,
+  Input,
+  MeetingStatusBadge,
+  Modal,
+  PageHeader,
+  Select,
+  Skeleton,
+  Textarea,
+  useToast,
+} from '../ui';
 
 export function MeetingList() {
   const { workspaceId } = useParams();
+  const toast = useToast();
 
+  const [workspaceName, setWorkspaceName] = useState('');
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Create State
   const [isCreating, setIsCreating] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newProjectId, setNewProjectId] = useState('');
@@ -26,222 +50,335 @@ export function MeetingList() {
   const [newLink, setNewLink] = useState('');
   const [newAttendees, setNewAttendees] = useState<string[]>([]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!workspaceId) return;
     setIsLoading(true);
     setError('');
     try {
-      const [meetingsData, projectsData, membersData] = await Promise.all([
+      const [wsData, meetingsData, projectsData, membersData] = await Promise.all([
+        workspaceApi.get(workspaceId),
         meetingApi.list(workspaceId),
         projectApi.list(workspaceId),
-        workspaceApi.getMembers(workspaceId)
+        workspaceApi.getMembers(workspaceId),
       ]);
+      setWorkspaceName(wsData.workspace.name);
       setMeetings(meetingsData.meetings);
       setProjects(projectsData.projects);
       setMembers(membersData.members);
     } catch (err: unknown) {
-      setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load meetings');
+      setError(err instanceof Error ? err.message : 'Failed to load meetings.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workspaceId]);
 
   useEffect(() => {
     loadData();
-  }, [workspaceId]);
+  }, [loadData]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (new Date(newStart) >= new Date(newEnd)) {
-        throw new Error('End time must be after start time');
-      }
-      await meetingApi.create(workspaceId!, {
-        title: newTitle,
-        description: newDesc,
-        projectId: newProjectId || undefined,
-        startTime: new Date(newStart).toISOString(),
-        endTime: new Date(newEnd).toISOString(),
-        meetingLink: newLink,
-        attendees: newAttendees
-      });
-      setIsCreating(false);
-      setNewTitle('');
-      setNewDesc('');
-      setNewProjectId('');
-      setNewStart('');
-      setNewEnd('');
-      setNewLink('');
-      setNewAttendees([]);
-      await loadData();
-    } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : "Unknown error") || 'Failed to create meeting');
-    }
+  const openCreate = () => {
+    setFormError('');
+    setNewTitle('');
+    setNewDesc('');
+    setNewProjectId('');
+    setNewStart('');
+    setNewEnd('');
+    setNewLink('');
+    setNewAttendees([]);
+    setIsCreating(true);
   };
 
   const toggleAttendee = (userId: string) => {
-    if (newAttendees.includes(userId)) {
-      setNewAttendees(newAttendees.filter(id => id !== userId));
-    } else {
-      setNewAttendees([...newAttendees, userId]);
+    setNewAttendees((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+    );
+  };
+
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault();
+    if (creating) return;
+    setFormError('');
+    if (new Date(newStart) >= new Date(newEnd)) {
+      setFormError('End time must be after the start time.');
+      return;
+    }
+    setCreating(true);
+    try {
+      await meetingApi.create(workspaceId!, {
+        title: newTitle.trim(),
+        description: newDesc.trim() || undefined,
+        projectId: newProjectId || undefined,
+        startTime: new Date(newStart).toISOString(),
+        endTime: new Date(newEnd).toISOString(),
+        meetingLink: newLink.trim() || undefined,
+        attendees: newAttendees,
+      });
+      setIsCreating(false);
+      await loadData();
+      toast.success('Meeting scheduled.');
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to schedule meeting.');
+    } finally {
+      setCreating(false);
     }
   };
 
-  if (isLoading) return <div className="text-gray-500">Loading meetings...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (isLoading) return <MeetingListSkeleton />;
+  if (error) {
+    return (
+      <div className="py-8">
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
+  }
 
   const now = new Date();
-  const upcoming = meetings.filter(m => new Date(m.endTime) > now && m.status !== 'cancelled').sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  const past = meetings.filter(m => new Date(m.endTime) <= now || m.status === 'cancelled').sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  const upcoming = meetings
+    .filter((m) => new Date(m.endTime) > now && m.status !== 'cancelled')
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const past = meetings
+    .filter((m) => new Date(m.endTime) <= now || m.status === 'cancelled')
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
-  const renderMeetingCard = (meeting: Meeting) => (
-    <li key={meeting.id} className="hover:bg-gray-50 transition-colors">
-      <Link to={`/dashboard/workspaces/${workspaceId}/meetings/${meeting.id}`} className="block p-5">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{meeting.title}</h3>
-            <div className="text-sm text-gray-500 mt-1 flex gap-3 items-center">
-              <span>{new Date(meeting.startTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} - {new Date(meeting.endTime).toLocaleTimeString([], { timeStyle: 'short' })}</span>
-            </div>
-          </div>
-          <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${
-            meeting.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-            meeting.status === 'completed' ? 'bg-green-100 text-green-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
-            {meeting.status}
-          </span>
+  const projectName = (id?: string) =>
+    id ? projects.find((p) => p.id === id)?.name : undefined;
+
+  const renderMeeting = (meeting: Meeting) => (
+    <Link
+      key={meeting.id}
+      to={`/dashboard/workspaces/${workspaceId}/meetings/${meeting.id}`}
+      className="group block"
+    >
+      <Card hover className="flex h-full flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="min-w-0 font-display text-[15px] font-semibold text-ink">
+            {meeting.title}
+          </h3>
+          <MeetingStatusBadge status={meeting.status} />
         </div>
-        {meeting.projectId && (
-          <p className="text-xs text-indigo-600 mb-2 font-medium">
-            Project: {projects.find(p => p.id === meeting.projectId)?.name || 'Unknown'}
-          </p>
-        )}
-        <div className="flex items-center gap-2 mt-3">
-          <div className="flex -space-x-2 overflow-hidden">
-            {meeting.attendees.map(a => (
-              <div key={a.id} className="inline-block h-6 w-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[10px] text-gray-700 font-bold" title={a.name}>
-                {a.name.charAt(0).toUpperCase()}
-              </div>
-            ))}
+
+        <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-muted">
+          <Icon name="clock" size={14} className="text-faint" />
+          {formatDateTime(meeting.startTime)} – {formatTime(meeting.endTime)}
+        </p>
+
+        <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+          <div className="flex items-center gap-2">
+            <AvatarStack
+              users={meeting.attendees.map((a) => ({ id: a.id, name: a.name }))}
+              size="xs"
+              max={4}
+            />
+            <span className="text-[12px] text-faint">
+              {meeting.attendees.length}{' '}
+              {meeting.attendees.length === 1 ? 'attendee' : 'attendees'}
+            </span>
           </div>
-          <span className="text-xs text-gray-500">{meeting.attendees.length} attendee(s)</span>
+          {projectName(meeting.projectId) && (
+            <Badge tone="violet" icon="folder">
+              {projectName(meeting.projectId)}
+            </Badge>
+          )}
         </div>
-      </Link>
-    </li>
+      </Card>
+    </Link>
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      <Link to={`/dashboard/workspaces/${workspaceId}`} className="text-sm text-blue-600 hover:underline mb-2 inline-block">
-        &larr; Back to Workspace
-      </Link>
+    <div className="space-y-7">
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Home', to: '/dashboard' },
+          { label: workspaceName || 'Workspace', to: `/dashboard/workspaces/${workspaceId}` },
+          { label: 'Meetings' },
+        ]}
+        title="Meetings"
+        description="Schedule and manage workspace events."
+        actions={
+          <Button leftIcon="plus" onClick={openCreate}>
+            Schedule meeting
+          </Button>
+        }
+      />
 
-      <div className="flex justify-between items-center bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Meetings</h1>
-          <p className="text-gray-600 text-sm mt-1">Schedule and manage workspace events</p>
-        </div>
-        <button 
-          onClick={() => setIsCreating(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm"
-        >
-          + Schedule Meeting
-        </button>
-      </div>
+      {meetings.length === 0 ? (
+        <EmptyState
+          icon="calendar"
+          title="No meetings yet"
+          message="Schedule a meeting to bring your team together and keep everyone aligned."
+          action={
+            <Button leftIcon="plus" onClick={openCreate}>
+              Schedule meeting
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-8">
+          <section>
+            <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold text-ink">
+              Upcoming
+              <span className="rounded-full bg-white/[0.05] px-1.5 py-0.5 text-[11px] tabular-nums text-faint">
+                {upcoming.length}
+              </span>
+            </h2>
+            {upcoming.length === 0 ? (
+              <Card className="p-6 text-center text-[13.5px] text-faint">
+                No upcoming meetings scheduled.
+              </Card>
+            ) : (
+              <div className="grid gap-3.5 sm:grid-cols-2">{upcoming.map(renderMeeting)}</div>
+            )}
+          </section>
 
-      <div className="space-y-6">
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Meetings</h2>
-          </div>
-          {upcoming.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No upcoming meetings.</div>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {upcoming.map(renderMeetingCard)}
-            </ul>
+          {past.length > 0 && (
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold text-ink">
+                Past &amp; cancelled
+                <span className="rounded-full bg-white/[0.05] px-1.5 py-0.5 text-[11px] tabular-nums text-faint">
+                  {past.length}
+                </span>
+              </h2>
+              <div className="grid gap-3.5 opacity-90 sm:grid-cols-2">{past.map(renderMeeting)}</div>
+            </section>
           )}
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden opacity-80">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-semibold text-gray-900">Past & Cancelled</h2>
-          </div>
-          {past.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No past meetings.</div>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {past.map(renderMeetingCard)}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {isCreating && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto pt-10 pb-10">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl my-auto">
-            <h3 className="text-lg font-bold mb-4">Schedule Meeting</h3>
-            <form onSubmit={handleCreate}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="col-span-2">
-                  <label htmlFor="meeting-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input id="meeting-title" required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="meeting-desc" className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
-                  <textarea id="meeting-desc" rows={2} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="meeting-project" className="block text-sm font-medium text-gray-700 mb-1">Project (Optional)</label>
-                  <select id="meeting-project" className="w-full px-3 py-2 border rounded-md bg-white" value={newProjectId} onChange={e => setNewProjectId(e.target.value)}>
-                    <option value="">-- Workspace Level --</option>
-                    {projects.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="meeting-start" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                  <input id="meeting-start" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newStart} onChange={e => setNewStart(e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="meeting-end" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                  <input id="meeting-end" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newEnd} onChange={e => setNewEnd(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="meeting-link" className="block text-sm font-medium text-gray-700 mb-1">Meeting Link (Optional)</label>
-                  <input id="meeting-link" type="url" placeholder="https://..." className="w-full px-3 py-2 border rounded-md" value={newLink} onChange={e => setNewLink(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label id="meeting-attendees-label" className="block text-sm font-medium text-gray-700 mb-1">Attendees ({newAttendees.length} selected)</label>
-                  <div role="group" aria-labelledby="meeting-attendees-label" className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-2">
-                    {members.map(m => {
-                      const isSelected = newAttendees.includes(m.user.id);
-                      return (
-                        <button
-                          key={m.user.id}
-                          type="button"
-                          onClick={() => toggleAttendee(m.user.id)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                            isSelected ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {m.user.name} {isSelected && '✓'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">Schedule</button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
+
+      {/* Schedule meeting modal */}
+      <Modal
+        open={isCreating}
+        onClose={() => !creating && setIsCreating(false)}
+        title="Schedule meeting"
+        description="Set a time, invite attendees, and optionally attach it to a project."
+        icon="calendar"
+        size="lg"
+        dismissOnBackdrop={!creating}
+        footer={
+          <>
+            <Button variant="subtle" onClick={() => setIsCreating(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="create-meeting-form"
+              loading={creating}
+              disabled={!newTitle.trim() || !newStart || !newEnd}
+            >
+              Schedule
+            </Button>
+          </>
+        }
+      >
+        <form id="create-meeting-form" onSubmit={handleCreate} className="space-y-4">
+          {formError && (
+            <p className="tone-danger flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px]">
+              <Icon name="alert-triangle" size={15} />
+              {formError}
+            </p>
+          )}
+          <Field htmlFor="m-title" label="Title" required>
+            <Input
+              id="m-title"
+              data-autofocus
+              required
+              placeholder="e.g. Sprint planning"
+              value={newTitle}
+              maxLength={200}
+              onChange={(e) => setNewTitle(e.target.value)}
+            />
+          </Field>
+          <Field htmlFor="m-desc" label="Description" hint="Optional.">
+            <Textarea
+              id="m-desc"
+              rows={2}
+              placeholder="Agenda or context…"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
+          </Field>
+          <Field htmlFor="m-project" label="Project" hint="Optional — leave as workspace-level.">
+            <Select
+              id="m-project"
+              value={newProjectId}
+              onChange={(e) => setNewProjectId(e.target.value)}
+            >
+              <option value="">Workspace-level</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field htmlFor="m-start" label="Start" required>
+              <Input
+                id="m-start"
+                required
+                type="datetime-local"
+                value={newStart}
+                invalid={!!formError && !!newStart && !!newEnd}
+                onChange={(e) => setNewStart(e.target.value)}
+              />
+            </Field>
+            <Field htmlFor="m-end" label="End" required>
+              <Input
+                id="m-end"
+                required
+                type="datetime-local"
+                value={newEnd}
+                invalid={!!formError && !!newStart && !!newEnd}
+                onChange={(e) => setNewEnd(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Field htmlFor="m-link" label="Meeting link" hint="Optional.">
+            <Input
+              id="m-link"
+              type="url"
+              placeholder="https://…"
+              value={newLink}
+              onChange={(e) => setNewLink(e.target.value)}
+            />
+          </Field>
+          <Field label={`Attendees (${newAttendees.length} selected)`}>
+            <AttendeePicker
+              members={members}
+              selected={newAttendees}
+              onToggle={toggleAttendee}
+              disabled={creating}
+            />
+          </Field>
+        </form>
+      </Modal>
+    </div>
+  );
+}
+
+function MeetingListSkeleton() {
+  return (
+    <div className="space-y-7">
+      <div className="space-y-3">
+        <Skeleton className="h-3.5 w-48" />
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-4 w-72 max-w-full" />
+      </div>
+      <Skeleton className="h-5 w-28" />
+      <div className="grid gap-3.5 sm:grid-cols-2">
+        {[0, 1, 2, 3].map((i) => (
+          <Card key={i} className="space-y-4 p-5">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-2/3" />
+            <div className="flex items-center justify-between pt-2">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

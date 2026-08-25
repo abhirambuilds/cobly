@@ -1,26 +1,38 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { Button } from '../ui';
 
 export function NotFound() {
+  const { isAuthenticated } = useAuth();
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-      <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider">404</p>
-      <h1 className="mt-2 text-3xl font-bold text-gray-900">Page not found</h1>
-      <p className="mt-3 max-w-md text-gray-600">
-        The page you&rsquo;re looking for doesn&rsquo;t exist or may have been moved.
-      </p>
-      <div className="mt-6 flex gap-3">
+    <div className="aurora grid-field relative grid min-h-screen place-items-center overflow-hidden bg-canvas px-5 text-ink">
+      <div className="relative z-10 flex max-w-md flex-col items-center text-center">
         <Link
           to="/"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+          className="mb-10 inline-flex items-center gap-2.5 text-muted transition-colors hover:text-ink"
         >
-          Go home
+          <img src="/favicon.svg" alt="" width={26} height={26} className="rounded-lg" />
+          <span className="font-display text-base font-semibold">Cobly</span>
         </Link>
-        <Link
-          to="/dashboard"
-          className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors border border-gray-300"
-        >
-          Go to dashboard
-        </Link>
+
+        <p className="signal-text font-display text-7xl font-semibold tracking-tight">404</p>
+        <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight">Page not found</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">
+          The page you’re looking for doesn’t exist or may have moved.
+        </p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link to="/">
+            <Button variant={isAuthenticated ? 'secondary' : 'primary'} leftIcon="home">
+              Back home
+            </Button>
+          </Link>
+          {isAuthenticated && (
+            <Link to="/dashboard">
+              <Button rightIcon="arrow-right">Go to dashboard</Button>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
