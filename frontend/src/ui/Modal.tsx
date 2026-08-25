@@ -49,6 +49,15 @@ export function Modal({
   const titleId = useId();
   const descId = useId();
 
+  // Keep the latest onClose in a ref so it is NOT a dependency of the focus
+  // effect below. Callers pass an inline onClose (recreated every render); if it
+  // were a dependency, the effect would re-run on every keystroke and yank focus
+  // out of the field — making inputs feel impossible to type into.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -64,7 +73,7 @@ export function Modal({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab' || !panel) return;
@@ -96,7 +105,7 @@ export function Modal({
       document.body.style.overflow = prevOverflow;
       previouslyFocused?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
