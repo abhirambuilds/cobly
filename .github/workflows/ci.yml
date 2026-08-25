@@ -1,0 +1,202 @@
+name: CI
+
+# Continuous integration for Cobly.
+#   * Every push to main validates that main stays green.
+#   * Every pull request targeting main is checked before it can be merged.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least privilege: this pipeline only reads the repository. It never pushes
+# images, publishes packages, or writes back to the repo, so no other scopes
+# and no privileged tokens are granted.
+permissions:
+  contents: read
+
+# If several pushes land quickly, cancel the older in-flight run for the same
+# ref instead of running them all — saves runner minutes without hiding failures.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Single source of truth for the Node version. Kept in lockstep with the
+  # Dockerfiles (node:22-bookworm-slim) so CI and the images never drift.
+  NODE_VERSION: "22"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Backend: type-check, compile, and run the Jest test suite with coverage.
+  # Tests use mongodb-memory-server (an in-process MongoDB) and set their own
+  # throwaway JWT_SECRET, so this job needs no database service and no secrets.
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend (build & test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # mongodb-memory-server downloads a mongod binary the first time it runs.
+      # Cache it so later runs start the in-memory database without re-downloading.
+      - name: Cache mongodb-memory-server binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: ${{ runner.os }}-mongodb-binaries-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-mongodb-binaries-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile TypeScript
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        # Upload even if tests fail, so the coverage/logs are available to inspect.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Frontend: lint, type-check, and produce the Vite production bundle.
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend (lint & build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check & build
+        # VITE_API_URL is baked into the bundle at build time and is a public,
+        # browser-facing URL — never a secret. This placeholder only needs to be
+        # a valid URL for the production build to succeed in CI.
+        env:
+          VITE_API_URL: http://localhost:5000/api
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Repository hygiene: fail fast if a real secret file was committed or if the
+  # type checker was silenced in our own source. Pure shell — no dependencies.
+  # ---------------------------------------------------------------------------
+  security:
+    name: Security & hygiene checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure no real .env files are tracked
+        run: |
+          # Only *.example templates may be committed. Any real dotenv file
+          # (.env, .env.local, .env.production, ...) could leak secrets and must
+          # never be tracked. This inspects tracked files only — never contents.
+          tracked="$(git ls-files | grep -E '(^|/)\.env(\.[^/]+)?$' | grep -vE '\.example$' || true)"
+          if [ -n "$tracked" ]; then
+            echo "::error::Tracked environment file(s) detected — remove them and add to .gitignore:"
+            echo "$tracked"
+            exit 1
+          fi
+          echo "OK: no real .env files are tracked (only *.example templates)."
+
+      - name: Ensure no type-safety escapes in source
+        run: |
+          # @ts-ignore / @ts-expect-error silence the compiler and can hide real
+          # bugs. Scan our own source only (never node_modules or build output).
+          matches="$(grep -rnE '@ts-(ignore|expect-error)' backend/src frontend/src || true)"
+          if [ -n "$matches" ]; then
+            echo "::error::Found @ts-ignore / @ts-expect-error in source — fix the underlying type instead:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "OK: no @ts-ignore / @ts-expect-error in source."
+
+  # ---------------------------------------------------------------------------
+  # Docker: validate the compose file and build both images from their
+  # Dockerfiles. Build-and-validate only — nothing is pushed to any registry,
+  # so no registry credentials are needed or referenced.
+  # ---------------------------------------------------------------------------
+  docker:
+    name: Docker build & compose validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only spend time building images once the app itself is known good.
+    needs: [backend, frontend]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate docker-compose configuration
+        # The compose file guards JWT_SECRET with ${JWT_SECRET:?...}, so `config`
+        # needs *some* value to interpolate. This is an obviously fake, CI-only
+        # placeholder used purely to validate the file — nothing is started with it.
+        env:
+          JWT_SECRET: ci-placeholder-not-a-real-secret-000000
+        run: docker compose config --quiet
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          load: false
+          tags: cobly-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          load: false
+          tags: cobly-frontend:ci
+          build-args: |
+            VITE_API_URL=http://localhost:5000/api
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend

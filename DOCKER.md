@@ -88,3 +88,28 @@ Compose starts MongoDB first and waits until its healthcheck passes before
 starting the backend (`depends_on: condition: service_healthy`). The backend
 image has its own healthcheck against `/api/health/readiness`, which reports
 healthy only once MongoDB is connected. The frontend starts after the backend.
+
+## Continuous integration (CI)
+
+GitHub Actions runs `.github/workflows/ci.yml` on every push to `main` and on
+every pull request targeting `main`. It builds and tests the same code these
+images ship, so a green run means the Docker build below should succeed too.
+The pipeline has four jobs:
+
+- **Backend** — `npm ci`, compile TypeScript (`npm run build`), and run the
+  Jest suite with coverage (`npm run test:coverage`). Tests use an in-process
+  MongoDB (`mongodb-memory-server`) and set their own throwaway `JWT_SECRET`,
+  so CI needs no database service and no secrets.
+- **Frontend** — `npm ci`, lint (`npm run lint`), then type-check and build the
+  Vite bundle (`npm run build`). `VITE_API_URL` is passed as a public
+  build-time placeholder, exactly as the Docker image build does.
+- **Security & hygiene** — fails the build if a real `.env` file was ever
+  committed (only `*.example` templates are allowed) or if `@ts-ignore` /
+  `@ts-expect-error` appears in application source.
+- **Docker** — after the backend and frontend jobs pass, validates
+  `docker-compose.yml` and builds both `Dockerfile`s with Buildx (cached, not
+  pushed anywhere — no registry credentials are involved).
+
+The workflow is granted only `contents: read`, pins official actions to major
+versions, and contains no secrets, credentials, or production URLs. Any failing
+step fails the whole run, so wait for CI to pass before merging.
