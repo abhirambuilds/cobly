@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import Workspace, { IWorkspace } from '../models/Workspace';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import { ActivityService } from './activityService';
 
 export interface SafeWorkspace {
@@ -133,7 +133,7 @@ export class WorkspaceService {
     if (!isMember) throw new Error('FORBIDDEN');
 
     return workspace.members.map(m => {
-      const u = m.user as any;
+      const u = m.user as unknown as IUser;
       return {
         id: u._id.toString(),
         name: u.name,

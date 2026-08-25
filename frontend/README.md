@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# Cobly frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript single-page app for Cobly, built with Vite and styled with Tailwind CSS v4. It talks to the [Cobly API](../docs/API.md).
 
-Currently, two official plugins are available:
+## Getting started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+cp .env.example .env     # optional — defaults target http://localhost:5000
+npm run dev              # Vite dev server on http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The backend must be running for the app to work; see the [root README](../README.md) and the [development guide](../docs/DEVELOPMENT.md).
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server with HMR |
+| `npm run build` | Type-check (`tsc -b`) and build for production |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Run oxlint |
+
+## Environment
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:5000` | Base URL of the Cobly API |
+
+`VITE_API_URL` is read at build time. When building the Docker image, pass it as a build argument (see [../DOCKER.md](../DOCKER.md)).
+
+## Structure
+
+- `src/api` — centralized fetch client (attaches the auth header, normalizes errors, handles `401`) and typed per-resource modules.
+- `src/context` — auth context/provider; the JWT is stored in `localStorage` under `cobly_token`.
+- `src/pages` — route-level screens.
+- `src/components` — reusable UI.
+
+When calling a new endpoint, add a typed function to the relevant `src/api` module rather than calling `fetch` from a component. See the [development guide](../docs/DEVELOPMENT.md#frontend-architecture) for conventions.

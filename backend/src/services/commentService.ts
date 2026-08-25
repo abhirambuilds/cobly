@@ -125,6 +125,7 @@ export class CommentService {
 
     const comments = await Comment.find({ discussionId: new mongoose.Types.ObjectId(discussionId) })
       .sort({ createdAt: 1 })
+      .limit(500)
       .populate('author', 'name email');
 
     return comments.map(c => this.toSafeComment(c));
@@ -185,8 +186,13 @@ export class CommentService {
     userId: string
   ): Promise<void> {
     const context = await this.getContext(workspaceId, projectId, discussionId, userId);
-    
-    const comment = await Comment.findOne({ 
+
+    // Must be a current workspace member (author/owner checks below still apply).
+    if (!context.isWorkspaceMember) {
+      throw new Error('FORBIDDEN');
+    }
+
+    const comment = await Comment.findOne({
       _id: new mongoose.Types.ObjectId(commentId), 
       discussionId: new mongoose.Types.ObjectId(discussionId) 
     });

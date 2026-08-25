@@ -12,6 +12,7 @@ import { ProjectDetail } from './pages/ProjectDetail';
 import { DiscussionDetail } from './pages/DiscussionDetail';
 import { MeetingList } from './pages/MeetingList';
 import { MeetingDetail } from './pages/MeetingDetail';
+import { NotFound } from './pages/NotFound';
 
 function App() {
   return (
@@ -33,6 +34,9 @@ function App() {
                 <Route path="workspaces/:workspaceId/projects/:projectId/discussions/:discussionId" element={<DiscussionDetail />} />
               </Route>
             </Route>
+
+            {/* Catch-all: render a friendly 404 inside the app shell */}
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

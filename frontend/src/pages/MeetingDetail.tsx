@@ -7,6 +7,7 @@ import type { Meeting, MeetingStatus } from '../types/meeting';
 import type { Project } from '../types/project';
 import type { WorkspaceMember } from '../types/workspace';
 import { useAuth } from '../hooks/useAuth';
+import { toDatetimeLocalValue } from '../utils/datetime';
 
 export function MeetingDetail() {
   const { workspaceId, meetingId } = useParams();
@@ -47,8 +48,8 @@ export function MeetingDetail() {
       setEditTitle(meetingData.meeting.title);
       setEditDesc(meetingData.meeting.description || '');
       setEditProjectId(meetingData.meeting.projectId || '');
-      setEditStart(new Date(meetingData.meeting.startTime).toISOString().slice(0,16));
-      setEditEnd(new Date(meetingData.meeting.endTime).toISOString().slice(0,16));
+      setEditStart(toDatetimeLocalValue(meetingData.meeting.startTime));
+      setEditEnd(toDatetimeLocalValue(meetingData.meeting.endTime));
       setEditLink(meetingData.meeting.meetingLink || '');
       setEditStatus(meetingData.meeting.status);
       setEditAttendees(meetingData.meeting.attendees.map(a => a.id));
@@ -220,7 +221,7 @@ export function MeetingDetail() {
       </div>
 
       {isEditing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto pt-10 pb-10">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto pt-10 pb-10">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl my-auto">
             <h3 className="text-lg font-bold mb-4">Edit Meeting</h3>
             <form onSubmit={handleUpdate}>

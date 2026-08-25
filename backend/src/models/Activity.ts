@@ -7,7 +7,7 @@ export interface IActivity extends Document {
   action: string;
   entityType: 'workspace' | 'project' | 'task' | 'member' | 'discussion' | 'comment' | 'meeting';
   entityId: mongoose.Types.ObjectId;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 

@@ -23,11 +23,12 @@ export interface SafeMeeting {
 
 export class MeetingService {
   static toSafeMeeting(meeting: IMeeting): SafeMeeting {
-    const toSafeUser = (u: any) => {
+    const toSafeUser = (u: unknown): { id: string; name: string; email: string } => {
       if (u && typeof u === 'object' && '_id' in u) {
-        return { id: u._id.toString(), name: u.name, email: u.email };
+        const user = u as unknown as IUser;
+        return { id: user._id.toString(), name: user.name, email: user.email };
       }
-      return { id: u?.toString() || '', name: 'Unknown', email: 'Unknown' };
+      return { id: u ? String(u) : '', name: 'Unknown', email: 'Unknown' };
     };
 
     return {

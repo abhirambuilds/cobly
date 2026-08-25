@@ -34,9 +34,10 @@ export class AuthService {
       throw new Error('INVALID_CREDENTIALS');
     }
 
-    const token = jwt.sign({ id: user._id }, config.jwtSecret, {
-      expiresIn: config.jwtExpiresIn as any,
-    } as jwt.SignOptions);
+    const signOptions: jwt.SignOptions = {
+      expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'],
+    };
+    const token = jwt.sign({ id: user._id }, config.jwtSecret, signOptions);
 
     return { user, token };
   }

@@ -179,7 +179,7 @@ export function MeetingList() {
       </div>
 
       {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto pt-10 pb-10">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto pt-10 pb-10">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl my-auto">
             <h3 className="text-lg font-bold mb-4">Schedule Meeting</h3>
             <form onSubmit={handleCreate}>

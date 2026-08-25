@@ -168,7 +168,7 @@ export class TaskService {
       }
     }
 
-    const tasks = await Task.find(query).populate('assignee', 'name email');
+    const tasks = await Task.find(query).populate('assignee', 'name email').limit(200);
     return tasks.map(t => this.toSafeTask(t));
   }
 
@@ -280,7 +280,13 @@ export class TaskService {
 
   static async deleteTask(workspaceId: string, projectId: string, taskId: string, userId: string): Promise<void> {
     const context = await this.getContext(workspaceId, projectId, userId);
-    
+
+    // Must be a current workspace member. Closes a lingering-access edge where
+    // a user removed from the workspace still owns the project.
+    if (!context.isWorkspaceMember) {
+      throw new Error('FORBIDDEN');
+    }
+
     // Only Project Owner or Workspace Owner can delete
     if (!context.isWorkspaceOwner && !context.isProjectOwner) {
       throw new Error('FORBIDDEN');

@@ -189,8 +189,13 @@ export class DiscussionService {
 
   static async deleteDiscussion(workspaceId: string, projectId: string, discussionId: string, userId: string): Promise<void> {
     const context = await this.getContext(workspaceId, projectId, userId);
-    
-    const discussion = await Discussion.findOne({ 
+
+    // Must be a current workspace member (author/owner checks below still apply).
+    if (!context.isWorkspaceMember) {
+      throw new Error('FORBIDDEN');
+    }
+
+    const discussion = await Discussion.findOne({
       _id: new mongoose.Types.ObjectId(discussionId), 
       projectId: new mongoose.Types.ObjectId(projectId) 
     });

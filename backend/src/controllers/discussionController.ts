@@ -44,7 +44,8 @@ export class DiscussionController {
       
       let limit = 50;
       if (req.query.limit && !isNaN(Number(req.query.limit))) {
-        limit = Number(req.query.limit);
+        // Clamp to a sane range so a client can't request an unbounded result set.
+        limit = Math.min(Math.max(Number(req.query.limit), 1), 100);
       }
 
       const discussions = await DiscussionService.getDiscussionsByProject(workspaceId, projectId, req.user!.id, limit);

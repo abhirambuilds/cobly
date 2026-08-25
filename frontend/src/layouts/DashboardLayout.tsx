@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useParams } from 'react-router-dom';
 import { workspaceApi } from '../services/workspace';
 import { notificationApi } from '../services/notification';
+import { ApiError } from '../services/api';
 import type { Workspace } from '../types/workspace';
 import type { Notification } from '../types/notification';
 import { useAuth } from '../hooks/useAuth';
@@ -9,28 +10,33 @@ import { useAuth } from '../hooks/useAuth';
 export function DashboardLayout() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [newWsName, setNewWsName] = useState('');
   const [newWsDesc, setNewWsDesc] = useState('');
-  
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  
+
   const notifRef = useRef<HTMLDivElement>(null);
 
   const fetchWorkspaces = async () => {
     try {
+      setLoadError('');
       const data = await workspaceApi.list();
       setWorkspaces(data.workspaces);
     } catch (err: unknown) {
-      if ((err instanceof Error ? err.message : "Unknown error").includes('401')) {
+      // A 401 is handled centrally by the API client (token cleared + redirect
+      // to /login), so here we only surface other failures inline.
+      if (err instanceof ApiError && err.status === 401) {
         logout();
       } else {
-        alert('Failed to load workspaces');
+        setLoadError('Failed to load workspaces. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -126,12 +132,34 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-gray-900 text-white flex flex-col">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          aria-hidden="true"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — static on desktop, off-canvas drawer on mobile */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white flex flex-col transform transition-transform duration-200 ease-in-out md:static md:z-auto md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        aria-label="Workspaces navigation"
+      >
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-          <Link to="/dashboard" className="text-xl font-bold tracking-tight">Cobly</Link>
+          <Link to="/dashboard" className="text-xl font-bold tracking-tight" onClick={() => setSidebarOpen(false)}>Cobly</Link>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1 text-gray-400 hover:text-white"
+            aria-label="Close sidebar"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto py-4">
           <div className="px-4 mb-2 flex justify-between items-center text-xs font-semibold text-gray-400 uppercase tracking-wider">
             <span>Workspaces</span>
@@ -139,9 +167,16 @@ export function DashboardLayout() {
               + New
             </button>
           </div>
-          
+
           {isLoading ? (
-            <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
+            <div className="px-4 py-2 text-sm text-gray-500">Loading…</div>
+          ) : loadError ? (
+            <div className="px-4 py-2 text-sm text-gray-400">
+              <p className="mb-2">{loadError}</p>
+              <button onClick={fetchWorkspaces} className="text-blue-400 hover:text-blue-300 font-medium">
+                Retry
+              </button>
+            </div>
           ) : workspaces.length === 0 ? (
             <div className="px-4 py-2 text-sm text-gray-500">No workspaces yet.</div>
           ) : (
@@ -150,8 +185,9 @@ export function DashboardLayout() {
                 const isActive = workspaceId === ws.id;
                 return (
                   <li key={ws.id}>
-                    <Link 
+                    <Link
                       to={`/dashboard/workspaces/${ws.id}`}
+                      onClick={() => setSidebarOpen(false)}
                       className={`block px-4 py-2 text-sm transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
                     >
                       {ws.name}
@@ -177,14 +213,25 @@ export function DashboardLayout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-end px-6 relative z-30">
-          <div className="relative" ref={notifRef}>
-            <button 
+        <header className="bg-white border-b border-gray-200 h-14 flex items-center px-4 sm:px-6 relative z-30">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900"
+            aria-label="Open sidebar"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div className="relative ml-auto" ref={notifRef}>
+            <button
               onClick={() => {
                 setShowNotifications(!showNotifications);
                 if (!showNotifications) fetchNotifications();
               }}
               className="relative p-2 text-gray-500 hover:text-gray-700 transition-colors focus:outline-none"
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -250,13 +297,14 @@ export function DashboardLayout() {
 
       {/* Create Workspace Modal */}
       {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
             <h3 className="text-lg font-bold mb-4">Create New Workspace</h3>
             <form onSubmit={handleCreateWorkspace}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label htmlFor="new-ws-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input
+                  id="new-ws-name"
                   required
                   autoFocus
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -265,8 +313,9 @@ export function DashboardLayout() {
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="new-ws-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  id="new-ws-desc"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newWsDesc}
                   onChange={e => setNewWsDesc(e.target.value)}

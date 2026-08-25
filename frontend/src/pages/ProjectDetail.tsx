@@ -9,6 +9,7 @@ import type { Task, TaskStatus, TaskPriority } from '../types/task';
 import type { Discussion } from '../types/discussion';
 import type { WorkspaceMember } from '../types/workspace';
 import { useAuth } from '../hooks/useAuth';
+import { toDatetimeLocalValue } from '../utils/datetime';
 
 export function ProjectDetail() {
   const { workspaceId, projectId } = useParams();
@@ -68,7 +69,7 @@ export function ProjectDetail() {
       setEditProjectName(projData.project.name);
       setEditProjectDesc(projData.project.description || '');
       setEditProjectStatus(projData.project.status);
-      setEditProjectDeadline(projData.project.deadline ? new Date(projData.project.deadline).toISOString().slice(0,16) : '');
+      setEditProjectDeadline(projData.project.deadline ? toDatetimeLocalValue(projData.project.deadline) : '');
     } catch (err: unknown) {
       setError((err instanceof Error ? err.message : "Unknown error") || 'Failed to load project details');
     } finally {
@@ -362,7 +363,7 @@ export function ProjectDetail() {
 
       {/* Create Discussion Modal */}
       {isCreatingDiscussion && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl">
             <h3 className="text-lg font-bold mb-4">Start a Discussion</h3>
             <form onSubmit={handleCreateDiscussion}>
@@ -385,7 +386,7 @@ export function ProjectDetail() {
 
       {/* Edit Project Modal */}
       {isEditingProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
             <h3 className="text-lg font-bold mb-4">Edit Project</h3>
             <form onSubmit={handleUpdateProject}>
@@ -438,7 +439,7 @@ export function ProjectDetail() {
 
       {/* Create Task Modal */}
       {isCreatingTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
           <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl">
             <h3 className="text-lg font-bold mb-4">Create Task</h3>
             <form onSubmit={handleCreateTask}>
@@ -494,7 +495,7 @@ export function ProjectDetail() {
 
       {/* Edit Task Modal */}
       {editingTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
           <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Edit Task</h3>
@@ -544,7 +545,7 @@ export function ProjectDetail() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                  <input type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editingTask.dueDate ? new Date(editingTask.dueDate).toISOString().slice(0,16) : ''} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} />
+                  <input type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editingTask.dueDate ? toDatetimeLocalValue(editingTask.dueDate) : ''} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} />
                 </div>
               </div>
               <div className="flex justify-end gap-3">

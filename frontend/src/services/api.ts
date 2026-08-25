@@ -1,10 +1,24 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+const TOKEN_KEY = 'cobly_token';
+
+/** Error thrown for any non-2xx API response. Carries the HTTP status so
+ *  callers can branch on it (e.g. 401 vs 404) instead of string-matching. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 function getHeaders(customHeaders?: HeadersInit) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  const token = localStorage.getItem('cobly_token');
+  const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -15,7 +29,20 @@ async function handleResponse(res: Response) {
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     const message = errorData?.error?.message || 'API request failed';
-    throw new Error(message);
+
+    // Centralized session-expiry handling: a 401 while a token is present
+    // means the session is no longer valid. Clear it so stale credentials
+    // don't linger, and if the user is inside the authenticated app, send
+    // them to the login screen. Login/register 401s carry no token, so they
+    // fall through untouched and the page can show its own error.
+    if (res.status === 401 && localStorage.getItem(TOKEN_KEY)) {
+      localStorage.removeItem(TOKEN_KEY);
+      if (window.location.pathname.startsWith('/dashboard')) {
+        window.location.assign('/login');
+      }
+    }
+
+    throw new ApiError(res.status, message);
   }
   return res.json();
 }

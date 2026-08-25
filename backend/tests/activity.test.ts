@@ -25,6 +25,6 @@ describe('Activity Side-Effects', () => {
     expect(actRes.status).toBe(200);
     // There should be at least one activity for workspace_created
     const activities = actRes.body.activities;
-    expect(activities.some((a: any) => a.action === 'workspace_created')).toBe(true);
+    expect(activities.some((a: { action: string }) => a.action === 'workspace_created')).toBe(true);
   });
 });

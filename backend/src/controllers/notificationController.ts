@@ -15,7 +15,8 @@ export class NotificationController {
       const unreadOnly = req.query.unread === 'true';
       let limit = 50;
       if (req.query.limit && !isNaN(Number(req.query.limit))) {
-        limit = Number(req.query.limit);
+        // Clamp to a sane range so a client can't request an unbounded result set.
+        limit = Math.min(Math.max(Number(req.query.limit), 1), 100);
       }
 
       const notifications = await NotificationService.getNotifications(req.user!.id, unreadOnly, limit);

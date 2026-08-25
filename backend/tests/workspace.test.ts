@@ -85,7 +85,6 @@ describe('Workspace Flow & Security', () => {
       .post('/api/workspaces')
       .set('Authorization', `Bearer ${user1Token}`)
       .send({ name: 'My WS' });
-    if (!wsRes.body.workspace) console.log('DEBUG WSRES', wsRes.body);
     const wsId = wsRes.body.workspace.id;
 
     const addRes = await request(app)
