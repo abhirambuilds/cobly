@@ -1,0 +1,3 @@
+# Normalize line endings to LF across platforms (repo builds on Linux/Docker).
+# text=auto lets git auto-detect text vs binary, so images are left untouched.
+* text=auto eol=lf

@@ -185,16 +185,16 @@ export function MeetingList() {
             <form onSubmit={handleCreate}>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
+                  <label htmlFor="meeting-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input id="meeting-title" required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
-                  <textarea rows={2} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
+                  <label htmlFor="meeting-desc" className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                  <textarea id="meeting-desc" rows={2} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project (Optional)</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={newProjectId} onChange={e => setNewProjectId(e.target.value)}>
+                  <label htmlFor="meeting-project" className="block text-sm font-medium text-gray-700 mb-1">Project (Optional)</label>
+                  <select id="meeting-project" className="w-full px-3 py-2 border rounded-md bg-white" value={newProjectId} onChange={e => setNewProjectId(e.target.value)}>
                     <option value="">-- Workspace Level --</option>
                     {projects.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -202,20 +202,20 @@ export function MeetingList() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                  <input required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newStart} onChange={e => setNewStart(e.target.value)} />
+                  <label htmlFor="meeting-start" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                  <input id="meeting-start" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newStart} onChange={e => setNewStart(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                  <input required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newEnd} onChange={e => setNewEnd(e.target.value)} />
+                  <label htmlFor="meeting-end" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                  <input id="meeting-end" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newEnd} onChange={e => setNewEnd(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Link (Optional)</label>
-                  <input type="url" placeholder="https://..." className="w-full px-3 py-2 border rounded-md" value={newLink} onChange={e => setNewLink(e.target.value)} />
+                  <label htmlFor="meeting-link" className="block text-sm font-medium text-gray-700 mb-1">Meeting Link (Optional)</label>
+                  <input id="meeting-link" type="url" placeholder="https://..." className="w-full px-3 py-2 border rounded-md" value={newLink} onChange={e => setNewLink(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Attendees ({newAttendees.length} selected)</label>
-                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-2">
+                  <label id="meeting-attendees-label" className="block text-sm font-medium text-gray-700 mb-1">Attendees ({newAttendees.length} selected)</label>
+                  <div role="group" aria-labelledby="meeting-attendees-label" className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-2">
                     {members.map(m => {
                       const isSelected = newAttendees.includes(m.user.id);
                       return (

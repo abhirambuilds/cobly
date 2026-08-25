@@ -368,12 +368,12 @@ export function ProjectDetail() {
             <h3 className="text-lg font-bold mb-4">Start a Discussion</h3>
             <form onSubmit={handleCreateDiscussion}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDiscussionTitle} onChange={e => setNewDiscussionTitle(e.target.value)} />
+                <label htmlFor="pd-disc-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input id="pd-disc-title" required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDiscussionTitle} onChange={e => setNewDiscussionTitle(e.target.value)} />
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                <textarea required rows={6} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDiscussionContent} onChange={e => setNewDiscussionContent(e.target.value)} />
+                <label htmlFor="pd-disc-content" className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <textarea id="pd-disc-content" required rows={6} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newDiscussionContent} onChange={e => setNewDiscussionContent(e.target.value)} />
               </div>
               <div className="flex justify-end gap-3">
                 <button type="button" onClick={() => setIsCreatingDiscussion(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md font-medium transition-colors">Cancel</button>
@@ -391,8 +391,9 @@ export function ProjectDetail() {
             <h3 className="text-lg font-bold mb-4">Edit Project</h3>
             <form onSubmit={handleUpdateProject}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label htmlFor="pd-edit-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input
+                  id="pd-edit-name"
                   required
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={editProjectName}
@@ -400,16 +401,18 @@ export function ProjectDetail() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="pd-edit-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  id="pd-edit-desc"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={editProjectDesc}
                   onChange={e => setEditProjectDesc(e.target.value)}
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label htmlFor="pd-edit-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
+                  id="pd-edit-status"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   value={editProjectStatus}
                   onChange={e => setEditProjectStatus(e.target.value)}
@@ -420,8 +423,9 @@ export function ProjectDetail() {
                 </select>
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                <label htmlFor="pd-edit-deadline" className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
                 <input
+                  id="pd-edit-deadline"
                   type="datetime-local"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={editProjectDeadline}
@@ -444,25 +448,25 @@ export function ProjectDetail() {
             <h3 className="text-lg font-bold mb-4">Create Task</h3>
             <form onSubmit={handleCreateTask}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} />
+                <label htmlFor="pd-new-task-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input id="pd-new-task-title" required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTaskDesc} onChange={e => setNewTaskDesc(e.target.value)} rows={3} />
+                <label htmlFor="pd-new-task-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea id="pd-new-task-desc" className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTaskDesc} onChange={e => setNewTaskDesc(e.target.value)} rows={3} />
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={newTaskStatus} onChange={e => setNewTaskStatus(e.target.value as TaskStatus)}>
+                  <label htmlFor="pd-new-task-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select id="pd-new-task-status" className="w-full px-3 py-2 border rounded-md bg-white" value={newTaskStatus} onChange={e => setNewTaskStatus(e.target.value as TaskStatus)}>
                     <option value="todo">To Do</option>
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as TaskPriority)}>
+                  <label htmlFor="pd-new-task-priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select id="pd-new-task-priority" className="w-full px-3 py-2 border rounded-md bg-white" value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as TaskPriority)}>
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -471,8 +475,8 @@ export function ProjectDetail() {
               </div>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={newTaskAssignee} onChange={e => setNewTaskAssignee(e.target.value)}>
+                  <label htmlFor="pd-new-task-assignee" className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+                  <select id="pd-new-task-assignee" className="w-full px-3 py-2 border rounded-md bg-white" value={newTaskAssignee} onChange={e => setNewTaskAssignee(e.target.value)}>
                     <option value="">Unassigned</option>
                     {members.map(m => (
                       <option key={m.user.id} value={m.user.id}>{m.user.name}</option>
@@ -480,8 +484,8 @@ export function ProjectDetail() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                  <input type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newTaskDueDate} onChange={e => setNewTaskDueDate(e.target.value)} />
+                  <label htmlFor="pd-new-task-due" className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <input id="pd-new-task-due" type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={newTaskDueDate} onChange={e => setNewTaskDueDate(e.target.value)} />
                 </div>
               </div>
               <div className="flex justify-end gap-3">
@@ -508,25 +512,25 @@ export function ProjectDetail() {
             </div>
             <form onSubmit={handleUpdateTask}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input required className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editingTask.title} onChange={e => setEditingTask({...editingTask, title: e.target.value})} />
+                <label htmlFor="pd-edit-task-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input id="pd-edit-task-title" required className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editingTask.title} onChange={e => setEditingTask({...editingTask, title: e.target.value})} />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editingTask.description || ''} onChange={e => setEditingTask({...editingTask, description: e.target.value})} rows={3} />
+                <label htmlFor="pd-edit-task-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea id="pd-edit-task-desc" className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editingTask.description || ''} onChange={e => setEditingTask({...editingTask, description: e.target.value})} rows={3} />
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={editingTask.status} onChange={e => setEditingTask({...editingTask, status: e.target.value as TaskStatus})}>
+                  <label htmlFor="pd-edit-task-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select id="pd-edit-task-status" className="w-full px-3 py-2 border rounded-md bg-white" value={editingTask.status} onChange={e => setEditingTask({...editingTask, status: e.target.value as TaskStatus})}>
                     <option value="todo">To Do</option>
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={editingTask.priority} onChange={e => setEditingTask({...editingTask, priority: e.target.value as TaskPriority})}>
+                  <label htmlFor="pd-edit-task-priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select id="pd-edit-task-priority" className="w-full px-3 py-2 border rounded-md bg-white" value={editingTask.priority} onChange={e => setEditingTask({...editingTask, priority: e.target.value as TaskPriority})}>
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -535,8 +539,8 @@ export function ProjectDetail() {
               </div>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={editingTask.assignee?.id || ''} onChange={e => setEditingTask({...editingTask, assignee: e.target.value ? { id: e.target.value, name: '...', email: '...' } : null})}>
+                  <label htmlFor="pd-edit-task-assignee" className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+                  <select id="pd-edit-task-assignee" className="w-full px-3 py-2 border rounded-md bg-white" value={editingTask.assignee?.id || ''} onChange={e => setEditingTask({...editingTask, assignee: e.target.value ? { id: e.target.value, name: '...', email: '...' } : null})}>
                     <option value="">Unassigned</option>
                     {members.map(m => (
                       <option key={m.user.id} value={m.user.id}>{m.user.name}</option>
@@ -544,8 +548,8 @@ export function ProjectDetail() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                  <input type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editingTask.dueDate ? toDatetimeLocalValue(editingTask.dueDate) : ''} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} />
+                  <label htmlFor="pd-edit-task-due" className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <input id="pd-edit-task-due" type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editingTask.dueDate ? toDatetimeLocalValue(editingTask.dueDate) : ''} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} />
                 </div>
               </div>
               <div className="flex justify-end gap-3">

@@ -234,6 +234,7 @@ export function WorkspaceOverview() {
               <form onSubmit={handleAddMember} className="flex gap-3">
                 <input
                   required
+                  aria-label="User ID to add"
                   placeholder="User ID to add"
                   className="flex-1 max-w-sm px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newMemberId}
@@ -313,8 +314,9 @@ export function WorkspaceOverview() {
             <h3 className="text-lg font-bold mb-4">Create Project</h3>
             <form onSubmit={handleCreateProject}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label htmlFor="ws-project-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input
+                  id="ws-project-name"
                   required
                   autoFocus
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -323,16 +325,18 @@ export function WorkspaceOverview() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="ws-project-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  id="ws-project-desc"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProjectDesc}
                   onChange={e => setNewProjectDesc(e.target.value)}
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                <label htmlFor="ws-project-deadline" className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
                 <input
+                  id="ws-project-deadline"
                   type="datetime-local"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProjectDeadline}

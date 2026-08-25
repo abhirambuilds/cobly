@@ -6,7 +6,7 @@ React 19 + TypeScript single-page app for Cobly, built with Vite and styled with
 
 ```bash
 npm install
-cp .env.example .env     # optional — defaults target http://localhost:5000
+cp .env.example .env     # optional — code default is http://localhost:5000/api
 npm run dev              # Vite dev server on http://localhost:5173
 ```
 
@@ -25,15 +25,15 @@ The backend must be running for the app to work; see the [root README](../README
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `VITE_API_URL` | `http://localhost:5000` | Base URL of the Cobly API |
+| `VITE_API_URL` | `http://localhost:5000/api` | Base URL of the Cobly API (must include the `/api` suffix — all backend routes are mounted under `/api`) |
 
 `VITE_API_URL` is read at build time. When building the Docker image, pass it as a build argument (see [../DOCKER.md](../DOCKER.md)).
 
 ## Structure
 
-- `src/api` — centralized fetch client (attaches the auth header, normalizes errors, handles `401`) and typed per-resource modules.
-- `src/context` — auth context/provider; the JWT is stored in `localStorage` under `cobly_token`.
+- `src/services` — centralized fetch client (`api.ts`, which attaches the auth header, normalizes errors, handles `401`) and typed per-resource modules.
+- `src/hooks` — `useAuth.tsx` auth context/provider; the JWT is stored in `localStorage` under `cobly_token`.
 - `src/pages` — route-level screens.
 - `src/components` — reusable UI.
 
-When calling a new endpoint, add a typed function to the relevant `src/api` module rather than calling `fetch` from a component. See the [development guide](../docs/DEVELOPMENT.md#frontend-architecture) for conventions.
+When calling a new endpoint, add a typed function to the relevant `src/services` module rather than calling `fetch` from a component. See the [development guide](../docs/DEVELOPMENT.md#frontend-architecture) for conventions.

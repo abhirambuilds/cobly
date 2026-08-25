@@ -227,24 +227,24 @@ export function MeetingDetail() {
             <form onSubmit={handleUpdate}>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+                  <label htmlFor="edit-meeting-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input id="edit-meeting-title" required autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea rows={3} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+                  <label htmlFor="edit-meeting-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea id="edit-meeting-desc" rows={3} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={editStatus} onChange={e => setEditStatus(e.target.value as MeetingStatus)}>
+                  <label htmlFor="edit-meeting-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select id="edit-meeting-status" className="w-full px-3 py-2 border rounded-md bg-white" value={editStatus} onChange={e => setEditStatus(e.target.value as MeetingStatus)}>
                     <option value="scheduled">Scheduled</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                  <select className="w-full px-3 py-2 border rounded-md bg-white" value={editProjectId} onChange={e => setEditProjectId(e.target.value)}>
+                  <label htmlFor="edit-meeting-project" className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                  <select id="edit-meeting-project" className="w-full px-3 py-2 border rounded-md bg-white" value={editProjectId} onChange={e => setEditProjectId(e.target.value)}>
                     <option value="">-- Workspace Level --</option>
                     {projects.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -252,20 +252,20 @@ export function MeetingDetail() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                  <input required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editStart} onChange={e => setEditStart(e.target.value)} />
+                  <label htmlFor="edit-meeting-start" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                  <input id="edit-meeting-start" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editStart} onChange={e => setEditStart(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                  <input required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editEnd} onChange={e => setEditEnd(e.target.value)} />
+                  <label htmlFor="edit-meeting-end" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                  <input id="edit-meeting-end" required type="datetime-local" className="w-full px-3 py-2 border rounded-md" value={editEnd} onChange={e => setEditEnd(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Link</label>
-                  <input type="url" className="w-full px-3 py-2 border rounded-md" value={editLink} onChange={e => setEditLink(e.target.value)} />
+                  <label htmlFor="edit-meeting-link" className="block text-sm font-medium text-gray-700 mb-1">Meeting Link</label>
+                  <input id="edit-meeting-link" type="url" className="w-full px-3 py-2 border rounded-md" value={editLink} onChange={e => setEditLink(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Attendees ({editAttendees.length} selected)</label>
-                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-2">
+                  <label id="edit-meeting-attendees-label" className="block text-sm font-medium text-gray-700 mb-1">Attendees ({editAttendees.length} selected)</label>
+                  <div role="group" aria-labelledby="edit-meeting-attendees-label" className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-2">
                     {members.map(m => {
                       const isSelected = editAttendees.includes(m.user.id);
                       return (

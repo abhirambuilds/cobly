@@ -149,9 +149,9 @@ Run `npm run build` (type-check) and `npm test` before committing.
 
 The frontend is a React 19 + TypeScript SPA built with Vite and styled with Tailwind CSS v4 (via `@tailwindcss/vite` — there is no separate Tailwind config/PostCSS step). Routing uses `react-router-dom` 7.
 
-All network calls go through a **centralized API client** in `src/api`. The client attaches the `Authorization: Bearer <token>` header from the stored token, normalizes error responses into a consistent shape, and centralizes `401` handling (clearing the session and redirecting to login) so individual screens don't repeat that logic. The JWT is stored in `localStorage` under `cobly_token`. Auth state is provided app-wide through the context in `src/context`.
+All network calls go through a **centralized API client** in `src/services` (`api.ts`). The client attaches the `Authorization: Bearer <token>` header from the stored token, normalizes error responses into a consistent shape, and centralizes `401` handling (clearing the session and redirecting to login) so individual screens don't repeat that logic. The JWT is stored in `localStorage` under `cobly_token`. Auth state is provided app-wide through the auth context in `src/hooks` (`useAuth.tsx`).
 
-Screens live in `src/pages` (route-level) and share presentational pieces from `src/components`. When adding a call to a new endpoint, add a typed function to the relevant `src/api` module rather than calling `fetch` directly from a component — this keeps auth, error normalization, and types in one place.
+Screens live in `src/pages` (route-level) and share presentational pieces from `src/components`. When adding a call to a new endpoint, add a typed function to the relevant `src/services` module rather than calling `fetch` directly from a component — this keeps auth, error normalization, and types in one place.
 
 > **Tailwind v4 note:** opacity utilities use slash syntax (`bg-black/50`), not the removed `bg-opacity-*` classes.
 

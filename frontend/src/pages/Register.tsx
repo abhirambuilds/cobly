@@ -37,8 +37,9 @@ export function Register() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
           <input
+            id="register-name"
             type="text"
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
@@ -48,8 +49,9 @@ export function Register() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+          <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
           <input
+            id="register-email"
             type="email"
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
@@ -59,8 +61,9 @@ export function Register() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input
+            id="register-password"
             type="password"
             required
             minLength={6}
