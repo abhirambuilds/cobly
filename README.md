@@ -11,6 +11,38 @@
   <img alt="License" src="https://img.shields.io/badge/license-ISC-blue">
 </p>
 
+## ✨ Product Preview
+
+Cobly is a futuristic collaborative workspace for managing projects, tasks, discussions, meetings, notifications, and activity.
+
+### 🔐 Authentication
+
+![Cobly Login](./images/01-login.png)
+
+### 📊 Dashboard
+
+![Cobly Dashboard](./images/02-dashboard.png)
+
+### 🏢 Workspace
+
+![Cobly Workspace](./images/03-workspace.png)
+
+### 📋 Task Management
+
+![Cobly Kanban](./images/04-kanban.png)
+
+### 🤝 Collaboration
+
+![Cobly Collaboration](./images/05-collaboration.png)
+
+### 📅 Meeting
+
+![Cobly Meeting](./images/06-Meeting.png)
+
+### 📜 Activity & Audit Trail
+
+![Cobly Activity](./images/07-Activity.png)
+
 ---
 
 ## Table of contents

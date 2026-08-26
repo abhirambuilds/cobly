@@ -1,6 +1,9 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }],
+  },
   testEnvironment: 'node',
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

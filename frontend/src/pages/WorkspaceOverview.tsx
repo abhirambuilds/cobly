@@ -558,7 +558,7 @@ export function WorkspaceOverview() {
         open={isEditingWorkspace}
         onClose={() => !savingWorkspace && setIsEditingWorkspace(false)}
         title="Edit workspace"
-        icon="settings"
+        icon="edit"
         size="md"
         dismissOnBackdrop={!savingWorkspace}
         footer={
