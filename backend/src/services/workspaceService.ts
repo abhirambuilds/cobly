@@ -143,21 +143,22 @@ export class WorkspaceService {
     });
   }
 
-  static async addMember(workspaceId: string, requesterId: string, targetUserId: string) {
+  static async addMemberByEmail(workspaceId: string, requesterId: string, email: string) {
     const workspace = await Workspace.findById(workspaceId);
     if (!workspace) throw new Error('NOT_FOUND');
 
     const requester = workspace.members.find(m => m.user.toString() === requesterId);
     if (!requester || requester.role !== 'owner') throw new Error('FORBIDDEN');
 
-    // target user must exist
-    const target = await User.findById(targetUserId);
+    // target user must exist by email
+    const target = await User.findOne({ email: email.toLowerCase().trim() });
     if (!target) throw new Error('USER_NOT_FOUND');
+    const targetUserId = target._id.toString();
 
     const alreadyMember = workspace.members.some(m => m.user.toString() === targetUserId);
     if (alreadyMember) throw new Error('ALREADY_MEMBER');
 
-    workspace.members.push({ user: new mongoose.Types.ObjectId(targetUserId), role: 'member' });
+    workspace.members.push({ user: target._id as any, role: 'member' });
     await workspace.save();
 
     await ActivityService.recordActivity({

@@ -1,16 +1,18 @@
-import type { User } from './auth';
+
 
 export interface WorkspaceMember {
-  user: User;
+  id: string;
+  name: string;
+  email: string;
   role: 'owner' | 'member';
-  joinedAt: string;
 }
 
 export interface Workspace {
   id: string;
   name: string;
   description?: string;
-  members: WorkspaceMember[];
+  ownerId: string;
+  membersCount: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -24,14 +24,14 @@ export function AttendeePicker({ members, selected, onToggle, disabled }: Attend
   return (
     <div className="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-xl border border-line-strong bg-surface-2 p-3">
       {members.map((m) => {
-        const active = selected.includes(m.user.id);
+        const active = selected.includes(m.id);
         return (
           <button
-            key={m.user.id}
+            key={m.id}
             type="button"
             aria-pressed={active}
             disabled={disabled}
-            onClick={() => onToggle(m.user.id)}
+            onClick={() => onToggle(m.id)}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 text-[12.5px] font-medium transition-colors',
               'disabled:cursor-not-allowed disabled:opacity-55',
@@ -40,8 +40,8 @@ export function AttendeePicker({ members, selected, onToggle, disabled }: Attend
                 : 'border-line-strong bg-surface text-muted hover:border-line hover:text-ink',
             )}
           >
-            <Avatar name={m.user.name} seed={m.user.id} size="xs" />
-            {m.user.name}
+            <Avatar name={m.name} seed={m.id} size="xs" />
+            {m.name}
             {active && <Icon name="check" size={13} />}
           </button>
         );

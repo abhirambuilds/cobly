@@ -9,6 +9,7 @@ export interface INotification extends Document {
   message: string;
   entityType?: string;
   entityId?: mongoose.Types.ObjectId;
+  projectId?: mongoose.Types.ObjectId;
   read: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -44,6 +45,10 @@ const NotificationSchema: Schema = new Schema(
     },
     entityId: {
       type: Schema.Types.ObjectId,
+    },
+    projectId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
     },
     read: {
       type: Boolean,

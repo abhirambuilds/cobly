@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const data = await api.get('/users/me');
         setState({ user: data.user, isAuthenticated: true, isLoading: false });
-      } catch (err) {
+      } catch {
         localStorage.removeItem('cobly_token');
         setState({ user: null, isAuthenticated: false, isLoading: false });
       }

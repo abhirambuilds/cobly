@@ -294,9 +294,9 @@ export function DashboardLayout() {
                       {ws.name.trim().charAt(0) || '?'}
                     </span>
                     <span className="min-w-0 flex-1 truncate font-medium">{ws.name}</span>
-                    {ws.members.length > 0 && (
+                    {ws.membersCount > 0 && (
                       <span className="shrink-0 text-[11px] tabular-nums text-faint">
-                        {ws.members.length}
+                        {ws.membersCount}
                       </span>
                     )}
                   </Link>

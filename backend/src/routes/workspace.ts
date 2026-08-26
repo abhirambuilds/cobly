@@ -29,9 +29,7 @@ const workspaceIdParamSchema = z.object({
 });
 
 const addMemberSchema = z.object({
-  userId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
-    message: 'Invalid user ID format',
-  }),
+  email: z.string().email('Invalid email address format'),
 });
 
 const memberIdParamSchema = z.object({

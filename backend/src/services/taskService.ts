@@ -137,7 +137,8 @@ export class TaskService {
         title: 'Assigned to a task',
         message: `You were assigned to task: ${task.title}`,
         entityType: 'task',
-        entityId: task._id.toString()
+        entityId: task._id.toString(),
+        projectId: projectId
       });
     }
 
@@ -270,7 +271,8 @@ export class TaskService {
         title: 'Assigned to a task',
         message: `You were assigned to task: ${task.title}`,
         entityType: 'task',
-        entityId: task._id.toString()
+        entityId: task._id.toString(),
+        projectId: projectId
       });
     }
 

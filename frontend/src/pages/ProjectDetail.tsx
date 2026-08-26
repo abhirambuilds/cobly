@@ -190,7 +190,7 @@ export function ProjectDetail() {
         status: ntStatus,
         priority: ntPriority,
         dueDate: ntDueDate ? new Date(ntDueDate).toISOString() : undefined,
-        assigneeId: ntAssignee || undefined,
+        assignee: ntAssignee || undefined,
       });
       setTasks((ts) => [...ts, res.task]);
       setIsCreatingTask(false);
@@ -223,7 +223,7 @@ export function ProjectDetail() {
         status: etStatus,
         priority: etPriority,
         dueDate: etDueDate ? new Date(etDueDate).toISOString() : undefined,
-        assigneeId: etAssignee || null,
+        assignee: etAssignee || null,
       });
       setTasks((ts) => ts.map((t) => (t.id === res.task.id ? res.task : t)));
       setEditingTask(null);
@@ -323,7 +323,7 @@ export function ProjectDetail() {
     );
   }
 
-  const isWorkspaceOwner = members.find((m) => m.user.id === user?.id)?.role === 'owner';
+  const isWorkspaceOwner = members.find((m) => m.id === user?.id)?.role === 'owner';
   const isProjectOwner = project.owner === user?.id;
   const canEditProject = isWorkspaceOwner || isProjectOwner;
 
@@ -634,8 +634,8 @@ export function ProjectDetail() {
               >
                 <option value="">Unassigned</option>
                 {members.map((m) => (
-                  <option key={m.user.id} value={m.user.id}>
-                    {m.user.name}
+                  <option key={m.id} value={m.id}>
+                    {m.name}
                   </option>
                 ))}
               </Select>
@@ -735,8 +735,8 @@ export function ProjectDetail() {
               >
                 <option value="">Unassigned</option>
                 {members.map((m) => (
-                  <option key={m.user.id} value={m.user.id}>
-                    {m.user.name}
+                  <option key={m.id} value={m.id}>
+                    {m.name}
                   </option>
                 ))}
               </Select>

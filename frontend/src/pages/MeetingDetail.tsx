@@ -182,11 +182,11 @@ export function MeetingDetail() {
     );
   }
 
-  const isWorkspaceOwner = members.find((m) => m.user.id === user?.id)?.role === 'owner';
+  const isWorkspaceOwner = members.find((m) => m.id === user?.id)?.role === 'owner';
   const isOrganizer = meeting.organizer === user?.id;
   const canModify = isWorkspaceOwner || isOrganizer;
 
-  const organizer = members.find((m) => m.user.id === meeting.organizer)?.user;
+  const organizer = members.find((m) => m.id === meeting.organizer);
   const projectName = meeting.projectId
     ? projects.find((p) => p.id === meeting.projectId)?.name
     : undefined;

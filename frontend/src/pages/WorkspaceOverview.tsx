@@ -60,7 +60,7 @@ export function WorkspaceOverview() {
 
   const [activeTab, setActiveTab] = useState<TabKey>('projects');
 
-  const [newMemberId, setNewMemberId] = useState('');
+  const [newMemberEmail, setNewMemberEmail] = useState('');
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [memberError, setMemberError] = useState('');
   const [memberToRemove, setMemberToRemove] = useState<WorkspaceMember | null>(null);
@@ -68,6 +68,11 @@ export function WorkspaceOverview() {
 
   const [confirmDeleteWs, setConfirmDeleteWs] = useState(false);
   const [deletingWs, setDeletingWs] = useState(false);
+
+  const [isEditingWorkspace, setIsEditingWorkspace] = useState(false);
+  const [savingWorkspace, setSavingWorkspace] = useState(false);
+  const [editWsName, setEditWsName] = useState('');
+  const [editWsDesc, setEditWsDesc] = useState('');
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
@@ -103,12 +108,20 @@ export function WorkspaceOverview() {
 
   const handleAddMember = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newMemberId.trim() || isAddingMember) return;
+    const input = newMemberEmail.trim();
+    if (!input || isAddingMember) return;
     setMemberError('');
+    
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) {
+      setMemberError('Please enter a valid email address.');
+      return;
+    }
+
     setIsAddingMember(true);
     try {
-      await workspaceApi.addMember(workspaceId!, newMemberId.trim());
-      setNewMemberId('');
+      await workspaceApi.addMember(workspaceId!, input);
+      setNewMemberEmail('');
       await loadData();
       await refreshWorkspaces();
       toast.success('Member added to the workspace.');
@@ -123,7 +136,7 @@ export function WorkspaceOverview() {
     if (!memberToRemove) return;
     setRemovingMember(true);
     try {
-      await workspaceApi.removeMember(workspaceId!, memberToRemove.user.id);
+      await workspaceApi.removeMember(workspaceId!, memberToRemove.id);
       setMemberToRemove(null);
       await loadData();
       await refreshWorkspaces();
@@ -145,7 +158,26 @@ export function WorkspaceOverview() {
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete workspace.');
       setDeletingWs(false);
-      setConfirmDeleteWs(false);
+    }
+  };
+
+  const handleEditWorkspace = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editWsName.trim() || savingWorkspace) return;
+    setSavingWorkspace(true);
+    try {
+      await workspaceApi.update(workspaceId!, {
+        name: editWsName.trim(),
+        description: editWsDesc.trim(),
+      });
+      await loadData();
+      await refreshWorkspaces();
+      setIsEditingWorkspace(false);
+      toast.success('Workspace updated.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update workspace.');
+    } finally {
+      setSavingWorkspace(false);
     }
   };
 
@@ -199,7 +231,7 @@ export function WorkspaceOverview() {
     );
   }
 
-  const isOwner = members.find((m) => m.user.id === user?.id)?.role === 'owner';
+  const isOwner = members.find((m) => m.id === user?.id)?.role === 'owner';
 
   const tabs: Array<{ key: TabKey; label: string; count?: number }> = [
     { key: 'projects', label: 'Projects', count: projects.length },
@@ -221,9 +253,22 @@ export function WorkspaceOverview() {
               </Button>
             </Link>
             {isOwner && (
-              <Button variant="subtle" leftIcon="trash" onClick={() => setConfirmDeleteWs(true)}>
-                Delete
-              </Button>
+              <>
+                <Button 
+                  variant="subtle" 
+                  leftIcon="edit" 
+                  onClick={() => {
+                    setEditWsName(workspace.name);
+                    setEditWsDesc(workspace.description || '');
+                    setIsEditingWorkspace(true);
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button variant="subtle" leftIcon="trash" onClick={() => setConfirmDeleteWs(true)}>
+                  Delete
+                </Button>
+              </>
             )}
           </>
         }
@@ -347,18 +392,18 @@ export function WorkspaceOverview() {
               <form onSubmit={handleAddMember} className="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="flex-1">
                   <Field
-                    htmlFor="add-member-id"
+                    htmlFor="add-member-email"
                     error={memberError || undefined}
-                    hint={memberError ? undefined : 'Paste a teammate’s user ID to add them.'}
+                    hint={memberError ? undefined : 'Type a teammate’s email address to add them.'}
                   >
                     <Input
-                      id="add-member-id"
+                      id="add-member-email"
                       required
-                      aria-label="User ID to add"
-                      placeholder="User ID"
-                      value={newMemberId}
+                      aria-label="Email address to add"
+                      placeholder="Email address"
+                      value={newMemberEmail}
                       invalid={!!memberError}
-                      onChange={(e) => setNewMemberId(e.target.value)}
+                      onChange={(e) => setNewMemberEmail(e.target.value)}
                       disabled={isAddingMember}
                     />
                   </Field>
@@ -367,7 +412,7 @@ export function WorkspaceOverview() {
                   type="submit"
                   leftIcon="plus"
                   loading={isAddingMember}
-                  disabled={!newMemberId.trim()}
+                  disabled={!newMemberEmail.trim()}
                   className="sm:mt-0"
                 >
                   Add member
@@ -378,19 +423,19 @@ export function WorkspaceOverview() {
 
           <Card className="divide-y divide-line overflow-hidden">
             {members.map((member) => (
-              <div key={member.user.id} className="flex items-center gap-3 p-4">
-                <Avatar name={member.user.name} seed={member.user.id} size="md" />
+              <div key={member.id} className="flex items-center gap-3 p-4">
+                <Avatar name={member.name} seed={member.id} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-ink">
-                    {member.user.name}
-                    {member.user.id === user?.id && (
+                    {member.name}
+                    {member.id === user?.id && (
                       <span className="ml-2 text-[11px] font-normal text-faint">You</span>
                     )}
                   </p>
-                  <p className="truncate text-[13px] text-muted">{member.user.email}</p>
+                  <p className="truncate text-[13px] text-muted">{member.email}</p>
                 </div>
                 <RoleBadge role={member.role} />
-                {isOwner && member.user.id !== user?.id && (
+                {isOwner && member.id !== user?.id && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -508,6 +553,53 @@ export function WorkspaceOverview() {
         </form>
       </Modal>
 
+      {/* Edit Workspace Modal */}
+      <Modal
+        open={isEditingWorkspace}
+        onClose={() => !savingWorkspace && setIsEditingWorkspace(false)}
+        title="Edit workspace"
+        icon="settings"
+        size="md"
+        dismissOnBackdrop={!savingWorkspace}
+        footer={
+          <>
+            <Button variant="subtle" onClick={() => setIsEditingWorkspace(false)} disabled={savingWorkspace}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-ws-form"
+              loading={savingWorkspace}
+              disabled={!editWsName.trim()}
+            >
+              Save changes
+            </Button>
+          </>
+        }
+      >
+        <form id="edit-ws-form" onSubmit={handleEditWorkspace} className="space-y-4">
+          <Field htmlFor="ew-name" label="Workspace name" required>
+            <Input
+              id="ew-name"
+              required
+              data-autofocus
+              value={editWsName}
+              maxLength={100}
+              onChange={(e) => setEditWsName(e.target.value)}
+            />
+          </Field>
+          <Field htmlFor="ew-desc" label="Description" hint="Optional.">
+            <Textarea
+              id="ew-desc"
+              rows={3}
+              value={editWsDesc}
+              maxLength={500}
+              onChange={(e) => setEditWsDesc(e.target.value)}
+            />
+          </Field>
+        </form>
+      </Modal>
+
       {/* Confirm: remove member */}
       <ConfirmDialog
         open={!!memberToRemove}
@@ -517,7 +609,7 @@ export function WorkspaceOverview() {
         title="Remove member"
         message={
           <>
-            Remove <span className="font-medium text-ink">{memberToRemove?.user.name}</span> from this
+            Remove <span className="font-medium text-ink">{memberToRemove?.name}</span> from this
             workspace? They’ll lose access to its projects and discussions.
           </>
         }

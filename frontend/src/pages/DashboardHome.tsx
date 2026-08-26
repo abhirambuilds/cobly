@@ -4,7 +4,6 @@ import { useDashboardContext } from '../hooks/useDashboardContext';
 import type { Workspace } from '../types/workspace';
 import { formatDate } from '../utils/datetime';
 import {
-  AvatarStack,
   Button,
   Card,
   EmptyState,
@@ -30,21 +29,11 @@ export function DashboardHome() {
 
   const firstName = user?.name?.trim().split(/\s+/)[0] ?? 'there';
 
-  const ownedCount = workspaces.filter((ws) =>
-    ws.members.some((m) => m.role === 'owner' && m.user.id === user?.id),
-  ).length;
-
-  const teammates = new Set<string>();
-  workspaces.forEach((ws) =>
-    ws.members.forEach((m) => {
-      if (m.user.id !== user?.id) teammates.add(m.user.id);
-    }),
-  );
+  const ownedCount = workspaces.filter((ws) => ws.ownerId === user?.id).length;
 
   const stats: Array<{ icon: IconName; label: string; value: number }> = [
     { icon: 'workspaces', label: 'Workspaces', value: workspaces.length },
     { icon: 'crown', label: 'Owned by you', value: ownedCount },
-    { icon: 'users', label: 'Teammates', value: teammates.size },
   ];
 
   return (
@@ -61,7 +50,7 @@ export function DashboardHome() {
       />
 
       {/* Stats — derived only from real workspace data */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {stats.map((s) => (
           <Card key={s.label} className="flex items-center gap-4 p-5">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-line-strong bg-surface-2 text-brand">
@@ -133,8 +122,7 @@ function WorkspaceCard({
   workspace: Workspace;
   currentUserId?: string;
 }) {
-  const myRole = workspace.members.find((m) => m.user.id === currentUserId)?.role;
-  const memberUsers = workspace.members.map((m) => ({ id: m.user.id, name: m.user.name }));
+  const myRole = workspace.ownerId === currentUserId ? 'owner' : 'member';
 
   return (
     <Link to={`/dashboard/workspaces/${workspace.id}`} className="group block h-full">
@@ -160,13 +148,13 @@ function WorkspaceCard({
         </p>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-4">
-          <div className="flex items-center gap-2">
-            <AvatarStack users={memberUsers} size="xs" max={4} />
-            <span className="text-[12px] text-faint">
-              {workspace.members.length} {workspace.members.length === 1 ? 'member' : 'members'}
+          <div className="flex items-center gap-2 text-[12px] text-faint">
+            <Icon name="users" size={14} />
+            <span>
+              {workspace.membersCount} {workspace.membersCount === 1 ? 'member' : 'members'}
             </span>
           </div>
-          {myRole && <RoleBadge role={myRole} />}
+          <RoleBadge role={myRole} />
         </div>
 
         <p className="mt-3 border-t border-line pt-3 text-[11.5px] text-faint">

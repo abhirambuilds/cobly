@@ -80,9 +80,9 @@ export class WorkspaceController {
   static async addMember(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const workspaceId = req.params.workspaceId as string;
-      const { userId } = req.body;
+      const { email } = req.body;
       
-      await WorkspaceService.addMember(workspaceId, req.user!.id, userId);
+      await WorkspaceService.addMemberByEmail(workspaceId, req.user!.id, email);
       res.status(200).json({ success: true, message: 'Member added' });
     } catch (error: unknown) {
       if (error instanceof Error && error.message === 'USER_NOT_FOUND') {

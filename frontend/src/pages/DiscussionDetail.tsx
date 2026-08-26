@@ -214,7 +214,7 @@ export function DiscussionDetail() {
     );
   }
 
-  const isWorkspaceOwner = members.find((m) => m.user.id === user?.id)?.role === 'owner';
+  const isWorkspaceOwner = members.find((m) => m.id === user?.id)?.role === 'owner';
   const isProjectOwner = project.owner === user?.id;
   const canModifyDiscussion =
     isWorkspaceOwner || isProjectOwner || discussion.author.id === user?.id;

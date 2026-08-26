@@ -28,7 +28,9 @@ function getHeaders(customHeaders?: HeadersInit) {
 async function handleResponse(res: Response) {
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    const message = errorData?.error?.message || 'API request failed';
+    const details = errorData?.error?.details;
+    const firstDetail = Array.isArray(details) && details.length > 0 ? details[0].message : null;
+    const message = firstDetail || errorData?.error?.message || 'API request failed';
 
     // Centralized session-expiry handling: a 401 while a token is present
     // means the session is no longer valid. Clear it so stale credentials

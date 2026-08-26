@@ -9,6 +9,7 @@ export interface SafeNotification {
   message: string;
   entityType?: string;
   entityId?: string;
+  projectId?: string;
   read: boolean;
   createdAt: Date;
 }
@@ -23,6 +24,7 @@ export class NotificationService {
       message: notification.message,
       entityType: notification.entityType,
       entityId: notification.entityId?.toString(),
+      projectId: notification.projectId?.toString(),
       read: notification.read,
       createdAt: notification.createdAt,
     };
@@ -39,6 +41,7 @@ export class NotificationService {
     message: string;
     entityType?: string;
     entityId?: string;
+    projectId?: string;
   }): Promise<void> {
     try {
       const notification = new Notification({
@@ -49,6 +52,7 @@ export class NotificationService {
         message: params.message,
         entityType: params.entityType,
         entityId: params.entityId ? new mongoose.Types.ObjectId(params.entityId) : undefined,
+        projectId: params.projectId ? new mongoose.Types.ObjectId(params.projectId) : undefined,
         read: false,
       });
       await notification.save();
