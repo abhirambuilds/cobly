@@ -34,7 +34,7 @@ describe('Project & Task Security Flow', () => {
     await request(app)
       .post(`/api/workspaces/${ws1Id}/members`)
       .set('Authorization', `Bearer ${user1Token}`)
-      .send({ userId: u2.user.id });
+      .send({ email: 'u2@example.com' });
 
     // Create Workspace 2 (owned by User3)
     const ws2Res = await request(app)

@@ -90,7 +90,7 @@ describe('Workspace Flow & Security', () => {
     const addRes = await request(app)
       .post(`/api/workspaces/${wsId}/members`)
       .set('Authorization', `Bearer ${user1Token}`)
-      .send({ userId: user2Id });
+      .send({ email: 'u2@example.com' });
 
     expect(addRes.status).toBe(200);
   });
@@ -105,14 +105,14 @@ describe('Workspace Flow & Security', () => {
     await request(app)
       .post(`/api/workspaces/${wsId}/members`)
       .set('Authorization', `Bearer ${user1Token}`)
-      .send({ userId: user2Id });
+      .send({ email: 'u2@example.com' });
 
     const u3 = await createTestUser('User3', 'u3@example.com', 'password');
 
     const addRes = await request(app)
       .post(`/api/workspaces/${wsId}/members`)
       .set('Authorization', `Bearer ${user2Token}`)
-      .send({ userId: u3.user.id });
+      .send({ email: 'u3@example.com' });
 
     expect(addRes.status).toBe(403);
   });
@@ -127,12 +127,12 @@ describe('Workspace Flow & Security', () => {
     await request(app)
       .post(`/api/workspaces/${wsId}/members`)
       .set('Authorization', `Bearer ${user1Token}`)
-      .send({ userId: user2Id });
+      .send({ email: 'u2@example.com' });
 
     const addRes = await request(app)
       .post(`/api/workspaces/${wsId}/members`)
       .set('Authorization', `Bearer ${user1Token}`)
-      .send({ userId: user2Id });
+      .send({ email: 'u2@example.com' });
 
     expect(addRes.status).toBe(409);
   });
@@ -165,7 +165,7 @@ describe('Workspace Flow & Security', () => {
     await request(app)
       .post(`/api/workspaces/${wsId}/members`)
       .set('Authorization', `Bearer ${user1Token}`)
-      .send({ userId: user2Id });
+      .send({ email: 'u2@example.com' });
 
     const delRes = await request(app)
       .delete(`/api/workspaces/${wsId}/members/${user2Id}`)

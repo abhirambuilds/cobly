@@ -40,12 +40,12 @@ describe('Task Security', () => {
   });
 
   it('allows assigning a member to a task', async () => {
-    await request(app).post(`/api/workspaces/${ws1Id}/members`).set('Authorization', `Bearer ${u1Token}`).send({ userId: u2Id });
+    await request(app).post(`/api/workspaces/${ws1Id}/members`).set('Authorization', `Bearer ${u1Token}`).send({ email: 'u2@example.com' });
 
     const res = await request(app)
       .patch(`/api/workspaces/${ws1Id}/projects/${p1Id}/tasks/${t1Id}`)
       .set('Authorization', `Bearer ${u1Token}`)
-      .send({ assigned_to: u2Id });
+      .send({ assignee: u2Id });
 
     expect(res.status).toBe(200);
   });

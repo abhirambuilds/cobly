@@ -31,7 +31,7 @@ describe('Discussion Security', () => {
   });
 
   it('allows member to create comment', async () => {
-    await request(app).post(`/api/workspaces/${ws1Id}/members`).set('Authorization', `Bearer ${u1Token}`).send({ userId: u2Id });
+    await request(app).post(`/api/workspaces/${ws1Id}/members`).set('Authorization', `Bearer ${u1Token}`).send({ email: 'u2@example.com' });
 
     const res = await request(app)
       .post(`/api/workspaces/${ws1Id}/projects/${p1Id}/discussions/${d1Id}/comments`)

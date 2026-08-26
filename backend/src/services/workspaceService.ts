@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Workspace, { IWorkspace } from '../models/Workspace';
 import User, { IUser } from '../models/User';
 import { ActivityService } from './activityService';
+import { NotificationService } from './notificationService';
 
 export interface SafeWorkspace {
   id: string;
@@ -171,7 +172,6 @@ export class WorkspaceService {
     });
 
     if (requesterId !== targetUserId) {
-      const { NotificationService } = await import('./notificationService.js');
       await NotificationService.sendNotification({
         recipientId: targetUserId,
         workspaceId: workspace._id.toString(),
